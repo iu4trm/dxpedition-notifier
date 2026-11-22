@@ -1,5 +1,13 @@
-.venv/
-__pycache__/
-*.pyc
-.DS_Store
+# File generati a runtime / cache locale
+dxpeditions.json
+seen_spots.json
+
+# Segreti e configurazioni locali
 .env
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/

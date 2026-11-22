@@ -1,28 +1,14 @@
 {
-  "updated_at": "2026-11-22 12:03 UTC",
+  "updated_at": "2026-11-22 12:46 UTC",
   "source_url": "https://www.ng3k.com/Misc/adxo.html",
-  "count": 60,
+  "count": 57,
   "dxpeditions": [
     {
-      "callsign": "DXCC",
-      "entity": "Contest",
-      "start_date": null,
-      "end_date": null,
-      "qsl_via": "CIS-Pfx",
-      "notes": "",
-      "source": "ng3k-adxo"
-    },
-    {
-      "callsign": "EXPIRED CONTEST AND SPECIAL OPERATIONS (1996+)",
-      "entity": "Previous Years",
-      "start_date": null,
-      "end_date": null,
-      "qsl_via": "",
-      "notes": "",
-      "source": "ng3k-adxo"
-    },
-    {
       "callsign": "3B9",
+      "aliases": [
+        "3B9/M0CFW",
+        "3B9KW"
+      ],
       "entity": "Rodrigues I",
       "start_date": "2026-10-20",
       "end_date": "2026-11-28",
@@ -32,6 +18,7 @@
     },
     {
       "callsign": "TZ4AM",
+      "aliases": [],
       "entity": "Mali",
       "start_date": "2026-10-22",
       "end_date": "2026-12-02",
@@ -41,6 +28,7 @@
     },
     {
       "callsign": "5R8IC",
+      "aliases": [],
       "entity": "Madagascar",
       "start_date": "2026-10-25",
       "end_date": "2026-12-20",
@@ -50,6 +38,7 @@
     },
     {
       "callsign": "7P8EA",
+      "aliases": [],
       "entity": "Lesotho",
       "start_date": "2026-10-26",
       "end_date": "2026-11-25",
@@ -59,6 +48,9 @@
     },
     {
       "callsign": "8P",
+      "aliases": [
+        "8P/PZ5TW"
+      ],
       "entity": "Barbados",
       "start_date": "2026-10-27",
       "end_date": "2026-11-29",
@@ -68,6 +60,9 @@
     },
     {
       "callsign": "VP2V",
+      "aliases": [
+        "VP2V/NY9K"
+      ],
       "entity": "Br Virgin Is",
       "start_date": "2026-10-27",
       "end_date": "2026-11-29",
@@ -77,6 +72,9 @@
     },
     {
       "callsign": "5X7W",
+      "aliases": [
+        "5X1Q"
+      ],
       "entity": "Uganda",
       "start_date": "2026-11-08",
       "end_date": "2026-12-29",
@@ -86,6 +84,7 @@
     },
     {
       "callsign": "3X4U",
+      "aliases": [],
       "entity": "Guinea",
       "start_date": "2026-11-11",
       "end_date": "2026-11-24",
@@ -95,6 +94,7 @@
     },
     {
       "callsign": "E51A",
+      "aliases": [],
       "entity": "South Cook Is",
       "start_date": "2026-11-14",
       "end_date": "2026-11-22",
@@ -104,6 +104,9 @@
     },
     {
       "callsign": "V4",
+      "aliases": [
+        "V4/KE4TT"
+      ],
       "entity": "St Kitts & Nevis",
       "start_date": "2026-11-14",
       "end_date": "2026-11-22",
@@ -113,6 +116,7 @@
     },
     {
       "callsign": "HD4W",
+      "aliases": [],
       "entity": "Ecuador",
       "start_date": "2026-11-15",
       "end_date": "2026-11-22",
@@ -122,6 +126,7 @@
     },
     {
       "callsign": "VK9XY",
+      "aliases": [],
       "entity": "Christmas I",
       "start_date": "2026-11-16",
       "end_date": "2026-12-04",
@@ -131,6 +136,7 @@
     },
     {
       "callsign": "VK9DS",
+      "aliases": [],
       "entity": "Cocos (Keeling) I",
       "start_date": "2026-11-20",
       "end_date": "2026-11-27",
@@ -140,6 +146,7 @@
     },
     {
       "callsign": "3B8",
+      "aliases": [],
       "entity": "Mauritius",
       "start_date": "2026-11-20",
       "end_date": "2026-12-03",
@@ -149,6 +156,10 @@
     },
     {
       "callsign": "3B9",
+      "aliases": [
+        "3B9/M0CFW",
+        "3B9KW"
+      ],
       "entity": "Rodrigues I",
       "start_date": "2026-11-22",
       "end_date": "2026-12-02",
@@ -158,6 +169,10 @@
     },
     {
       "callsign": "ZD7",
+      "aliases": [
+        "ZD7WP",
+        "ZD7VJ"
+      ],
       "entity": "St Helena",
       "start_date": "2026-11-22",
       "end_date": "2026-12-05",
@@ -167,6 +182,9 @@
     },
     {
       "callsign": "HR5",
+      "aliases": [
+        "HR5/F2JD"
+      ],
       "entity": "Honduras",
       "start_date": "2026-11-23",
       "end_date": "2026-11-30",
@@ -176,6 +194,7 @@
     },
     {
       "callsign": "PZ5KW",
+      "aliases": [],
       "entity": "Surinam",
       "start_date": "2026-11-23",
       "end_date": "2026-12-01",
@@ -185,6 +204,9 @@
     },
     {
       "callsign": "HR9",
+      "aliases": [
+        "K6VHF"
+      ],
       "entity": "Honduras",
       "start_date": "2026-11-25",
       "end_date": "2026-12-05",
@@ -194,6 +216,7 @@
     },
     {
       "callsign": "XR0Z",
+      "aliases": [],
       "entity": "Juan Fernandez Is",
       "start_date": "2026-12-05",
       "end_date": "2026-12-15",
@@ -203,6 +226,7 @@
     },
     {
       "callsign": "V6AIU",
+      "aliases": [],
       "entity": "Micronesia",
       "start_date": "2026-11-26",
       "end_date": "2026-12-01",
@@ -212,6 +236,7 @@
     },
     {
       "callsign": "VP8TAA",
+      "aliases": [],
       "entity": "Falkland Is",
       "start_date": "2026-11-26",
       "end_date": "2026-12-31",
@@ -221,6 +246,7 @@
     },
     {
       "callsign": "VK9DS",
+      "aliases": [],
       "entity": "Christmas I",
       "start_date": "2026-11-28",
       "end_date": "2026-12-04",
@@ -230,6 +256,7 @@
     },
     {
       "callsign": "A35TV",
+      "aliases": [],
       "entity": "Tonga",
       "start_date": "2026-11-28",
       "end_date": "2026-12-04",
@@ -239,6 +266,9 @@
     },
     {
       "callsign": "VP2V",
+      "aliases": [
+        "VP2V/WE9G"
+      ],
       "entity": "Br Virgin Is",
       "start_date": "2026-11-29",
       "end_date": "2026-12-07",
@@ -248,6 +278,7 @@
     },
     {
       "callsign": "FS",
+      "aliases": [],
       "entity": "St Martin",
       "start_date": "2026-11-30",
       "end_date": "2026-12-09",
@@ -257,6 +288,7 @@
     },
     {
       "callsign": "3B8GY",
+      "aliases": [],
       "entity": "Mauritius",
       "start_date": "2026-12-03",
       "end_date": "2026-12-15",
@@ -266,6 +298,7 @@
     },
     {
       "callsign": "C21GD",
+      "aliases": [],
       "entity": "Nauru",
       "start_date": "2026-12-10",
       "end_date": "2026-12-16",
@@ -275,6 +308,7 @@
     },
     {
       "callsign": "VP8THW",
+      "aliases": [],
       "entity": "Falkland Is",
       "start_date": "2026-12-12",
       "end_date": "2027-01-02",
@@ -284,6 +318,7 @@
     },
     {
       "callsign": "ZD7LC",
+      "aliases": [],
       "entity": "St Helena",
       "start_date": "2026-12-14",
       "end_date": "2027-01-01",
@@ -293,6 +328,7 @@
     },
     {
       "callsign": "5H1RK",
+      "aliases": [],
       "entity": "Tanzania",
       "start_date": "2026-12-23",
       "end_date": "2027-01-06",
@@ -302,6 +338,7 @@
     },
     {
       "callsign": "C5H",
+      "aliases": [],
       "entity": "Gambia",
       "start_date": "2026-12-27",
       "end_date": "2027-01-03",
@@ -311,6 +348,9 @@
     },
     {
       "callsign": "S79",
+      "aliases": [
+        "S79/OL1T"
+      ],
       "entity": "Seychelles",
       "start_date": "2026-12-28",
       "end_date": "2027-01-08",
@@ -320,6 +360,9 @@
     },
     {
       "callsign": "KH0",
+      "aliases": [
+        "KH0/AJ6VJ"
+      ],
       "entity": "Marianas",
       "start_date": "2026-12-29",
       "end_date": "2027-01-03",
@@ -329,6 +372,7 @@
     },
     {
       "callsign": "T88SM",
+      "aliases": [],
       "entity": "Palau",
       "start_date": "2027-01-08",
       "end_date": "2027-01-14",
@@ -338,6 +382,7 @@
     },
     {
       "callsign": "8P9CB",
+      "aliases": [],
       "entity": "Barbados",
       "start_date": "2027-01-09",
       "end_date": "2027-01-21",
@@ -347,6 +392,7 @@
     },
     {
       "callsign": "VP8TOG",
+      "aliases": [],
       "entity": "Falkland Is",
       "start_date": "2027-01-10",
       "end_date": "2027-10-17",
@@ -356,6 +402,7 @@
     },
     {
       "callsign": "V6XG",
+      "aliases": [],
       "entity": "Micronesia",
       "start_date": "2027-01-14",
       "end_date": "2027-01-22",
@@ -365,6 +412,7 @@
     },
     {
       "callsign": "XT2MAX",
+      "aliases": [],
       "entity": "Burkina Faso",
       "start_date": "2027-01-17",
       "end_date": "2027-01-24",
@@ -374,6 +422,9 @@
     },
     {
       "callsign": "PJ7",
+      "aliases": [
+        "PJ7/N4XTT"
+      ],
       "entity": "Sint Maarten",
       "start_date": "2027-01-19",
       "end_date": "2027-01-27",
@@ -383,6 +434,7 @@
     },
     {
       "callsign": "3Y0L",
+      "aliases": [],
       "entity": "Peter I",
       "start_date": "2027-02-01",
       "end_date": "2027-02-28",
@@ -392,6 +444,10 @@
     },
     {
       "callsign": "V4",
+      "aliases": [
+        "V47YA",
+        "V47RCX"
+      ],
       "entity": "St Kitts & Nevis",
       "start_date": "2027-02-03",
       "end_date": "2027-03-03",
@@ -401,6 +457,7 @@
     },
     {
       "callsign": "H44MS",
+      "aliases": [],
       "entity": "Solomon Is",
       "start_date": "2027-02-05",
       "end_date": "2027-05-07",
@@ -410,6 +467,7 @@
     },
     {
       "callsign": "T8KT",
+      "aliases": [],
       "entity": "Palau",
       "start_date": "2027-02-10",
       "end_date": "2027-02-18",
@@ -419,6 +477,7 @@
     },
     {
       "callsign": "6O6X",
+      "aliases": [],
       "entity": "Somalia",
       "start_date": "2027-02-15",
       "end_date": "2027-02-27",
@@ -428,6 +487,9 @@
     },
     {
       "callsign": "3A",
+      "aliases": [
+        "3A/WE9G"
+      ],
       "entity": "Monaco",
       "start_date": "2027-03-02",
       "end_date": "2027-03-09",
@@ -437,6 +499,10 @@
     },
     {
       "callsign": "J6",
+      "aliases": [
+        "J6/KB4YKC",
+        "J6/KB4PML"
+      ],
       "entity": "St Lucia",
       "start_date": "2027-03-09",
       "end_date": "2027-03-15",
@@ -446,6 +512,7 @@
     },
     {
       "callsign": "VP0SG",
+      "aliases": [],
       "entity": "South Georgia I",
       "start_date": "2027-03-12",
       "end_date": "2027-03-26",
@@ -455,6 +522,9 @@
     },
     {
       "callsign": "T8",
+      "aliases": [
+        "T88FM"
+      ],
       "entity": "Palau",
       "start_date": "2027-04-08",
       "end_date": "2027-04-14",
@@ -464,6 +534,7 @@
     },
     {
       "callsign": "E51RAR",
+      "aliases": [],
       "entity": "South Cook Is",
       "start_date": "2027-04-12",
       "end_date": "2027-04-22",
@@ -473,6 +544,9 @@
     },
     {
       "callsign": "FO",
+      "aliases": [
+        "FO/WE9G"
+      ],
       "entity": "French Polynesia",
       "start_date": "2027-05-17",
       "end_date": "2027-05-24",
@@ -482,6 +556,7 @@
     },
     {
       "callsign": "VK2LHW",
+      "aliases": [],
       "entity": "Lord Howe I",
       "start_date": "2027-05-24",
       "end_date": "2027-06-07",
@@ -491,6 +566,9 @@
     },
     {
       "callsign": "V4",
+      "aliases": [
+        "V4/WW6W"
+      ],
       "entity": "St Kitts & Nevis",
       "start_date": "2027-05-27",
       "end_date": "2027-06-03",
@@ -500,6 +578,7 @@
     },
     {
       "callsign": "VP6W",
+      "aliases": [],
       "entity": "Pitcairn I",
       "start_date": "2027-05-27",
       "end_date": "2027-06-12",
@@ -509,6 +588,7 @@
     },
     {
       "callsign": "9M8T",
+      "aliases": [],
       "entity": "East Malaysia",
       "start_date": "2027-06-04",
       "end_date": "2027-06-20",
@@ -518,6 +598,9 @@
     },
     {
       "callsign": "FP",
+      "aliases": [
+        "FP/KV1J"
+      ],
       "entity": "St Pierre & Miquelon",
       "start_date": "2027-06-26",
       "end_date": "2027-07-13",
@@ -527,20 +610,12 @@
     },
     {
       "callsign": "XU7X",
+      "aliases": [],
       "entity": "Cambodia",
       "start_date": "2027-11-13",
       "end_date": "2027-11-23",
       "qsl_via": "M0URX",
       "notes": "By 24 ops fm Koh Rong I (IOTA AS-133, OK10pq, WWFF XU-0008); 7 stns; 160-6m; CW SSB FT8 FT4 RTTY PSK31; auto-LoTW after 1 year",
-      "source": "ng3k-adxo"
-    },
-    {
-      "callsign": "DXCC",
-      "entity": "Contest",
-      "start_date": null,
-      "end_date": null,
-      "qsl_via": "CIS-Pfx",
-      "notes": "",
       "source": "ng3k-adxo"
     }
   ]
