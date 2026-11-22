@@ -2,6 +2,8 @@
 dxpeditions.json
 seen_spots.json
 prop_cache.json
+dx_paths_map.png
+world_countries.geojson
 
 # Segreti e configurazioni locali
 .env

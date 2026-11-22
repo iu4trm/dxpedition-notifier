@@ -13,16 +13,27 @@ from prefixes import get_call_continent
 
 try:
     from propagation import (
+        CONTINENT_REFERENCE_COORDS,
         assess_path_for_spot,
         format_prop_log,
         format_prop_telegram_html,
         get_propagation_summary,
     )
 except ImportError:
+    CONTINENT_REFERENCE_COORDS = {}
     assess_path_for_spot = None
     format_prop_log = None
     format_prop_telegram_html = None
     get_propagation_summary = None
+
+try:
+    from map_paths import DEFAULT_MAP_OUT, render_paths_map, send_photo_to_chats
+except ImportError:
+    DEFAULT_MAP_OUT = os.path.join(
+        os.path.dirname(os.path.abspath(__file__)), "dx_paths_map.png"
+    )
+    render_paths_map = None
+    send_photo_to_chats = None
 
 HAMQTH_DXC_URL = "https://www.hamqth.com/dxc_csv.php"
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -109,6 +120,11 @@ def parse_args() -> argparse.Namespace:
         "--test-telegram",
         action="store_true",
         help="Invia un messaggio di test su Telegram per verificare token e chat_id.",
+    )
+    parser.add_argument(
+        "--send-map",
+        action="store_true",
+        help="Allega anche la mappa delle tratte su Telegram (disattivato per default).",
     )
     return parser.parse_args()
 
@@ -480,6 +496,40 @@ def _render_prop_telegram(prop: dict | None, home_continent: str) -> str:
         return format_prop_telegram_html(prop)
 
 
+def _resolve_home_coords(home_continent: str) -> tuple[float, float] | None:
+    """Ricava (lat, lon) da MY_LAT/MY_LON oppure dal centro indicativo del continente."""
+    lat_raw = os.getenv("MY_LAT", "").strip().replace(",", ".")
+    lon_raw = os.getenv("MY_LON", "").strip().replace(",", ".")
+    if lat_raw and lon_raw:
+        try:
+            lat_val = float(lat_raw)
+            lon_val = float(lon_raw)
+            if -90.0 <= lat_val <= 90.0 and -180.0 <= lon_val <= 180.0:
+                return lat_val, lon_val
+        except ValueError:
+            pass
+
+    return CONTINENT_REFERENCE_COORDS.get(home_continent)
+
+
+def _update_local_map(
+    matches: list[tuple[dict, str, str]],
+    home_continent: str,
+    out_path: str = DEFAULT_MAP_OUT,
+) -> str | None:
+    """Genera la mappa PNG in locale se ci sono nuovi match; restituisce il percorso o None."""
+    if not matches or render_paths_map is None:
+        return None
+    home_coords = _resolve_home_coords(home_continent)
+    if not home_coords:
+        return None
+    try:
+        return render_paths_map(matches, home_coords=home_coords, out_path=out_path)
+    except Exception as err:
+        print(f"Avviso mappa: impossibile generare {out_path} ({err}).")
+        return None
+
+
 def _format_telegram_message(
     matches: list[tuple[dict, str, str]],
     callsign: str,
@@ -708,10 +758,26 @@ def main():
             f"| spotter: {spot['spotter']} | {reason}{path_suffix}"
         )
 
+    map_path = _update_local_map(new_matches, home_continent)
+    if map_path:
+        print(f"Mappa locale aggiornata: {map_path}")
+
     if args.no_telegram:
         print("Info Telegram: --no-telegram attivo, invio saltato.")
     else:
         send_telegram_alerts(new_matches, my_callsign, home_continent, prop=prop)
+        if args.send_map and map_path and send_photo_to_chats is not None:
+            caption = (
+                f"🗺️ <b>DX Paths Map</b> ({_esc(my_callsign)} / {_esc(home_continent)}) — "
+                f"{len(new_matches)} nuovi match"
+            )
+            send_photo_to_chats(
+                image_path=map_path,
+                caption=caption,
+                bot_token=TELEGRAM_BOT_TOKEN,
+                chat_ids=[TELEGRAM_CHAT_ID] if TELEGRAM_CHAT_ID else [],
+                silent=TELEGRAM_SILENT,
+            )
 
 
 if __name__ == "__main__":
