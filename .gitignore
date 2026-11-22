@@ -1,12 +1,14 @@
 # File generati a runtime / cache locale
 dxpeditions.json
 seen_spots.json
+prop_cache.json
 
 # Segreti e configurazioni locali
 .env
 dx_monitor.log
 .DS_Store
 **/.DS_Store
+.vscode/settings.json
 
 # Python
 __pycache__/

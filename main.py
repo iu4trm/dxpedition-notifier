@@ -11,6 +11,19 @@ import requests
 
 from prefixes import get_call_continent
 
+try:
+    from propagation import (
+        assess_path_for_spot,
+        format_prop_log,
+        format_prop_telegram_html,
+        get_propagation_summary,
+    )
+except ImportError:
+    assess_path_for_spot = None
+    format_prop_log = None
+    format_prop_telegram_html = None
+    get_propagation_summary = None
+
 HAMQTH_DXC_URL = "https://www.hamqth.com/dxc_csv.php"
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DOTENV_FILE = os.path.join(BASE_DIR, ".env")
@@ -440,30 +453,66 @@ def _format_notification_timestamp(dt: datetime.datetime | None = None) -> str:
     return f"{local_str} ({utc_str})"
 
 
+def _get_path_note(spot: dict, prop: dict | None, home_continent: str) -> str:
+    if assess_path_for_spot is None:
+        return ""
+    try:
+        return assess_path_for_spot(spot, prop, home_continent)
+    except Exception:
+        return ""
+
+
+def _render_prop_log(prop: dict | None, home_continent: str) -> str:
+    if not prop or format_prop_log is None:
+        return ""
+    try:
+        return format_prop_log(prop, home_continent=home_continent)
+    except TypeError:
+        return format_prop_log(prop)
+
+
+def _render_prop_telegram(prop: dict | None, home_continent: str) -> str:
+    if not prop or format_prop_telegram_html is None:
+        return ""
+    try:
+        return format_prop_telegram_html(prop, home_continent=home_continent)
+    except TypeError:
+        return format_prop_telegram_html(prop)
+
+
 def _format_telegram_message(
     matches: list[tuple[dict, str, str]],
     callsign: str,
     home_continent: str,
     sent_at_label: str | None = None,
+    prop: dict | None = None,
 ) -> str:
     """Formatta i nuovi spot in uno o più messaggi leggibili su Telegram."""
     ts_label = sent_at_label or _format_notification_timestamp()
     lines = [
         f"📡 <b>DX Cluster Alert</b> ({_esc(callsign)} / {_esc(home_continent)})",
         f"🗓️ Inviato: <code>{_esc(ts_label)}</code>",
-        "",
     ]
+    prop_line = _render_prop_telegram(prop, home_continent)
+    if prop_line:
+        lines.append(prop_line)
+    lines.append("")
+
     for spot, priority, reason in matches:
         badge = "🚨 <b>HIGH</b>" if priority == "HIGH" else "🔹 <b>NORMAL</b>"
         entity = spot.get("dxcc_entity") or (get_call_continent(spot["dx_call"]) or "")
         comment = spot.get("comment") or "-"
-        lines.append(
+        path_note = _get_path_note(spot, prop, home_continent)
+        spot_block = (
             f"{badge} <b>{_esc(spot['dx_call'])}</b> ({_esc(entity)}) — "
             f"<b>{_esc(spot['freq'])} kHz</b> [{_esc(spot['band'])}]\n"
             f"🕒 {_esc(spot['utc'])} | spotter: <code>{_esc(spot['spotter'])}</code>\n"
             f"💬 {_esc(comment)}\n"
-            f"<i>{_esc(reason)}</i>\n"
+            f"<i>{_esc(reason)}</i>"
         )
+        if path_note:
+            spot_block += f"\n🧭 <code>{_esc(path_note)}</code>"
+        lines.append(spot_block + "\n")
     return "\n".join(lines).strip()
 
 
@@ -504,16 +553,21 @@ def send_telegram_test(
     bot_token: str = TELEGRAM_BOT_TOKEN,
     chat_id: str = TELEGRAM_CHAT_ID,
     silent: bool = TELEGRAM_SILENT,
+    prop: dict | None = None,
 ) -> bool:
     """Invia un messaggio di prova per verificare configurazione Telegram."""
     ts_label = _format_notification_timestamp()
-    text = (
-        f"✅ <b>Test Telegram DX Cluster Monitor</b>\n"
-        f"Callsign: <code>{_esc(callsign)}</code> ({_esc(home_continent)})\n"
-        f"Modalità: <code>{_esc(TELEGRAM_NOTIFY_MODE)}</code> | Silenzioso: <code>{silent}</code>\n"
-        f"🗓️ Inviato: <code>{_esc(ts_label)}</code>"
-    )
-    ok = _send_telegram_text(text, bot_token=bot_token, chat_id=chat_id, silent=silent)
+    lines = [
+        "✅ <b>Test Telegram DX Cluster Monitor</b>",
+        f"Callsign: <code>{_esc(callsign)}</code> ({_esc(home_continent)})",
+        f"Modalità: <code>{_esc(TELEGRAM_NOTIFY_MODE)}</code> | Silenzioso: <code>{silent}</code>",
+        f"🗓️ Inviato: <code>{_esc(ts_label)}</code>",
+    ]
+    prop_line = _render_prop_telegram(prop, home_continent)
+    if prop_line:
+        lines.append(prop_line)
+
+    ok = _send_telegram_text("\n".join(lines), bot_token=bot_token, chat_id=chat_id, silent=silent)
     if ok:
         print("Messaggio di test inviato su Telegram con successo.")
     return ok
@@ -526,6 +580,7 @@ def send_telegram_alerts(
     bot_token: str = TELEGRAM_BOT_TOKEN,
     chat_id: str = TELEGRAM_CHAT_ID,
     silent: bool = TELEGRAM_SILENT,
+    prop: dict | None = None,
 ) -> None:
     """Invia i nuovi match filtrati su Telegram, suddividendo se superano il limite di 4096 caratteri."""
     to_send = [(s, p, r) for (s, p, r) in matches if _should_send_telegram(p)]
@@ -544,7 +599,7 @@ def send_telegram_alerts(
     current_len = 0
 
     for item in to_send:
-        approx_len = len(_format_telegram_message([item], callsign, home_continent, sent_at_label))
+        approx_len = len(_format_telegram_message([item], callsign, home_continent, sent_at_label, prop=prop))
         if current_chunk and (current_len + approx_len) > max_len:
             chunks.append(current_chunk)
             current_chunk = [item]
@@ -557,7 +612,7 @@ def send_telegram_alerts(
         chunks.append(current_chunk)
 
     for idx, chunk in enumerate(chunks, start=1):
-        text = _format_telegram_message(chunk, callsign, home_continent, sent_at_label)
+        text = _format_telegram_message(chunk, callsign, home_continent, sent_at_label, prop=prop)
         if len(chunks) > 1:
             text = f"<i>Parte {idx}/{len(chunks)}</i>\n\n{text}"
         _send_telegram_text(text, bot_token=bot_token, chat_id=chat_id, silent=silent)
@@ -581,13 +636,23 @@ def main():
         home_continent = "EU"
         print(f"Avviso: prefisso di '{my_callsign}' non riconosciuto, uso 'EU' come fallback.")
 
+    prop = None
+    if get_propagation_summary is not None:
+        try:
+            prop = get_propagation_summary()
+        except Exception as err:
+            print(f"Avviso propagazione: impossibile leggere i dati solari ({err}).")
+
     print("=" * 56)
     print(f"ESECUZIONE: {run_timestamp}")
     print(f"CALLSIGN IN USO: {my_callsign}  |  CONTINENTE: {home_continent}  |  ORIGINE: {callsign_source}")
+    prop_log = _render_prop_log(prop, home_continent)
+    if prop_log:
+        print(prop_log)
     print("=" * 56)
 
     if args.test_telegram:
-        send_telegram_test(my_callsign, home_continent)
+        send_telegram_test(my_callsign, home_continent, prop=prop)
         return
 
     dxpeditions, source = load_dxpeditions()
@@ -635,16 +700,18 @@ def main():
         f"(duplicati saltati negli ultimi {DEDUP_WINDOW_MINUTES} min: {skipped_duplicates})\n"
     )
     for spot, priority, reason in new_matches[:20]:
+        path_note = _get_path_note(spot, prop, home_continent)
+        path_suffix = f" | {path_note}" if path_note else ""
         print(
             f"[{priority}] [{spot['utc']} | {spot['band']}] {spot['dx_call']} ({spot['dxcc_entity']}) "
             f"su {spot['freq']} kHz | '{spot['comment']}' "
-            f"| spotter: {spot['spotter']} | {reason}"
+            f"| spotter: {spot['spotter']} | {reason}{path_suffix}"
         )
 
     if args.no_telegram:
         print("Info Telegram: --no-telegram attivo, invio saltato.")
     else:
-        send_telegram_alerts(new_matches, my_callsign, home_continent)
+        send_telegram_alerts(new_matches, my_callsign, home_continent, prop=prop)
 
 
 if __name__ == "__main__":
