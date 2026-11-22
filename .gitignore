@@ -5,6 +5,8 @@ seen_spots.json
 # Segreti e configurazioni locali
 .env
 dx_monitor.log
+.DS_Store
+**/.DS_Store
 
 # Python
 __pycache__/
