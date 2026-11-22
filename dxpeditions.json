@@ -1,0 +1,547 @@
+{
+  "updated_at": "2026-11-22 12:03 UTC",
+  "source_url": "https://www.ng3k.com/Misc/adxo.html",
+  "count": 60,
+  "dxpeditions": [
+    {
+      "callsign": "DXCC",
+      "entity": "Contest",
+      "start_date": null,
+      "end_date": null,
+      "qsl_via": "CIS-Pfx",
+      "notes": "",
+      "source": "ng3k-adxo"
+    },
+    {
+      "callsign": "EXPIRED CONTEST AND SPECIAL OPERATIONS (1996+)",
+      "entity": "Previous Years",
+      "start_date": null,
+      "end_date": null,
+      "qsl_via": "",
+      "notes": "",
+      "source": "ng3k-adxo"
+    },
+    {
+      "callsign": "3B9",
+      "entity": "Rodrigues I",
+      "start_date": "2026-10-20",
+      "end_date": "2026-11-28",
+      "qsl_via": "LoTW",
+      "notes": "By M0CFW as 3B9/M0CFW; 160-6m; CW SSB + digital; QRV for CQWW DX SSB using 3B9KW",
+      "source": "ng3k-adxo"
+    },
+    {
+      "callsign": "TZ4AM",
+      "entity": "Mali",
+      "start_date": "2026-10-22",
+      "end_date": "2026-12-02",
+      "qsl_via": "LoTW",
+      "notes": "By KX4R; 80-6m; CW SSB; QSL via KX4R direct; perhaps KX4R last trip to Mali",
+      "source": "ng3k-adxo"
+    },
+    {
+      "callsign": "5R8IC",
+      "entity": "Madagascar",
+      "start_date": "2026-10-25",
+      "end_date": "2026-12-20",
+      "qsl_via": "LoTW",
+      "notes": "By F6ICX fm Ste Marie I (IOTA AF-090); HF; mainly CW, some FT8 (f/h) SSB; planned FT8 QRGs: 7056, 10131, 14090, 18095, 21090, 24911 28090",
+      "source": "ng3k-adxo"
+    },
+    {
+      "callsign": "7P8EA",
+      "entity": "Lesotho",
+      "start_date": "2026-10-26",
+      "end_date": "2026-11-25",
+      "qsl_via": "HB9CCS",
+      "notes": "By HB9CCS fm Thaba-Tseka (KG0hl); 20-10m; CW SSB",
+      "source": "ng3k-adxo"
+    },
+    {
+      "callsign": "8P",
+      "entity": "Barbados",
+      "start_date": "2026-10-27",
+      "end_date": "2026-11-29",
+      "qsl_via": "LoTW",
+      "notes": "By PZ5TW as 8P/PZ5TW fm Crab Hill; HF",
+      "source": "ng3k-adxo"
+    },
+    {
+      "callsign": "VP2V",
+      "entity": "Br Virgin Is",
+      "start_date": "2026-10-27",
+      "end_date": "2026-11-29",
+      "qsl_via": "LoTW",
+      "notes": "By NY9K as VP2V/NY9K fm Virgin Gorda and Tortola; 40-10m; FT8; POTA VG-0016; some operations have been maritime mobile",
+      "source": "ng3k-adxo"
+    },
+    {
+      "callsign": "5X7W",
+      "entity": "Uganda",
+      "start_date": "2026-11-08",
+      "end_date": "2026-12-29",
+      "qsl_via": "LoTW",
+      "notes": "By SM0HPL; also using 5X1Q when running QRP; 80-10m; slow CW FT8 FT4; QRV for CQWW DX CW; QSL via M0OXO or Club Log OQRS",
+      "source": "ng3k-adxo"
+    },
+    {
+      "callsign": "3X4U",
+      "entity": "Guinea",
+      "start_date": "2026-11-11",
+      "end_date": "2026-11-24",
+      "qsl_via": "M0URX OQRS",
+      "notes": "By 10 ON/PA ops fm Lac de Koba; 160-6m; CW SSB FT8 RTTY; 5 stns; 1kw; 2 hexbeams, phased verticals, foursquare, verticals; LoTW after 6 months",
+      "source": "ng3k-adxo"
+    },
+    {
+      "callsign": "E51A",
+      "entity": "South Cook Is",
+      "start_date": "2026-11-14",
+      "end_date": "2026-11-22",
+      "qsl_via": "YT5A (B/d)",
+      "notes": "By YT5A fm Rarotonga I; HF; CW SSB FT8; holiday style operation",
+      "source": "ng3k-adxo"
+    },
+    {
+      "callsign": "V4",
+      "entity": "St Kitts & Nevis",
+      "start_date": "2026-11-14",
+      "end_date": "2026-11-22",
+      "qsl_via": "LoTW",
+      "notes": "By KE4TT as V4/KE4TT; 40-10m; RTTY FT8 CW SSB; 100w; perhaps POTA activity; holiday sytle operation",
+      "source": "ng3k-adxo"
+    },
+    {
+      "callsign": "HD4W",
+      "entity": "Ecuador",
+      "start_date": "2026-11-15",
+      "end_date": "2026-11-22",
+      "qsl_via": "Club Log OQRS",
+      "notes": "By PY8WW fm Cojimies I (IOTA SA-056); 40-6m; SSB CW FT8",
+      "source": "ng3k-adxo"
+    },
+    {
+      "callsign": "VK9XY",
+      "entity": "Christmas I",
+      "start_date": "2026-11-16",
+      "end_date": "2026-12-04",
+      "qsl_via": "M0OXO",
+      "notes": "By 8 young ops, including KN4DLY KN2P VK4OTZ; 160-6m; CW SSB FT8 FT4; see Web for full QSL details; QRV for CQWW DX CW",
+      "source": "ng3k-adxo"
+    },
+    {
+      "callsign": "VK9DS",
+      "entity": "Cocos (Keeling) I",
+      "start_date": "2026-11-20",
+      "end_date": "2026-11-27",
+      "qsl_via": "?",
+      "notes": "By VK6DS; 80-6m; SSB CW FT8; logs will be uploaded to Club Log and QRZ upon his return home",
+      "source": "ng3k-adxo"
+    },
+    {
+      "callsign": "3B8",
+      "entity": "Mauritius",
+      "start_date": "2026-11-20",
+      "end_date": "2026-12-03",
+      "qsl_via": "LoTW",
+      "notes": "By 3B8/E70A; HF; QSL via E70A (B/d)",
+      "source": "ng3k-adxo"
+    },
+    {
+      "callsign": "3B9",
+      "entity": "Rodrigues I",
+      "start_date": "2026-11-22",
+      "end_date": "2026-12-02",
+      "qsl_via": "LoTW",
+      "notes": "By M0CFW as 3B9/M0CFW; 160-6m; CW SSB + digital; QRV for CQWW DX CW using 3B9KW",
+      "source": "ng3k-adxo"
+    },
+    {
+      "callsign": "ZD7",
+      "entity": "St Helena",
+      "start_date": "2026-11-22",
+      "end_date": "2026-12-05",
+      "qsl_via": "LoTW",
+      "notes": "By G4BWP as ZD7WP and 5Z4VJ as ZD7VJ; HF, incl 60m; CW SSB FT8; QRV for CQWW DX CW",
+      "source": "ng3k-adxo"
+    },
+    {
+      "callsign": "HR5",
+      "entity": "Honduras",
+      "start_date": "2026-11-23",
+      "end_date": "2026-11-30",
+      "qsl_via": "LoTW",
+      "notes": "By F2JD as HR5/F2JD; HF; all modes; QSL via F6AJA; QRV through Mar 15, 2027",
+      "source": "ng3k-adxo"
+    },
+    {
+      "callsign": "PZ5KW",
+      "entity": "Surinam",
+      "start_date": "2026-11-23",
+      "end_date": "2026-12-01",
+      "qsl_via": "PE1K",
+      "notes": "By PE1K fm Paramaibo; HF; FT8 SSB; holiday style operation",
+      "source": "ng3k-adxo"
+    },
+    {
+      "callsign": "HR9",
+      "entity": "Honduras",
+      "start_date": "2026-11-25",
+      "end_date": "2026-12-05",
+      "qsl_via": "LoTW",
+      "notes": "By K6VHF as K6VHF/HR9 fm Roatan I (IOTA NA-057); 160-6m; all modes; 100w; hexbeam, longwire, delta, beam; QSL OK via Club Log OQRS",
+      "source": "ng3k-adxo"
+    },
+    {
+      "callsign": "XR0Z",
+      "entity": "Juan Fernandez Is",
+      "start_date": "2026-12-05",
+      "end_date": "2026-12-15",
+      "qsl_via": "LoTW",
+      "notes": "By CE3VTZ XQ7I fm Alexander Selkirk I (IOTA SA-101, EF96of); 160-6m; CW SSB FT8; QSL via M0URX; dates estimated",
+      "source": "ng3k-adxo"
+    },
+    {
+      "callsign": "V6AIU",
+      "entity": "Micronesia",
+      "start_date": "2026-11-26",
+      "end_date": "2026-12-01",
+      "qsl_via": "Club Log OQRS",
+      "notes": "By JH3AIU fm Truk, Weno I; 80-10m; CW FT8 RTTY; 300-600w",
+      "source": "ng3k-adxo"
+    },
+    {
+      "callsign": "VP8TAA",
+      "entity": "Falkland Is",
+      "start_date": "2026-11-26",
+      "end_date": "2026-12-31",
+      "qsl_via": "VP8TAA",
+      "notes": "By MW0KZN; mainly 40-10m, perhaps lower bands; SSB FT8 QRS CW; QSL via MW0KZN direct; operation to continue until Feb 27",
+      "source": "ng3k-adxo"
+    },
+    {
+      "callsign": "VK9DS",
+      "entity": "Christmas I",
+      "start_date": "2026-11-28",
+      "end_date": "2026-12-04",
+      "qsl_via": "?",
+      "notes": "By VK6DS; 80-6m; SSB CW FT8; logs will be uploaded to Club Log and QRZ upon his return home",
+      "source": "ng3k-adxo"
+    },
+    {
+      "callsign": "A35TV",
+      "entity": "Tonga",
+      "start_date": "2026-11-28",
+      "end_date": "2026-12-04",
+      "qsl_via": "Club Log OQRS",
+      "notes": "By VK2IR VK3YP SV0EG SV1DAY SV1GE HB9EB ; 160-6m; FT8 CW SSB",
+      "source": "ng3k-adxo"
+    },
+    {
+      "callsign": "VP2V",
+      "entity": "Br Virgin Is",
+      "start_date": "2026-11-29",
+      "end_date": "2026-12-07",
+      "qsl_via": "LoTW",
+      "notes": "By WE9G as VP2V/WE9G fm Tortola; 80-6m; mainly FT8, some CW SSB; QSL via WE9G direcct",
+      "source": "ng3k-adxo"
+    },
+    {
+      "callsign": "FS",
+      "entity": "St Martin",
+      "start_date": "2026-11-30",
+      "end_date": "2026-12-09",
+      "qsl_via": "LoTW",
+      "notes": "By DL1MGB; 160-10m; CW; QSL via Club Log OQRS or DL1MGB (B/d)",
+      "source": "ng3k-adxo"
+    },
+    {
+      "callsign": "3B8GY",
+      "entity": "Mauritius",
+      "start_date": "2026-12-03",
+      "end_date": "2026-12-15",
+      "qsl_via": "Club Log OQRS",
+      "notes": "By SP2JMB; 40-10m; QSL via SP2JMB direct",
+      "source": "ng3k-adxo"
+    },
+    {
+      "callsign": "C21GD",
+      "entity": "Nauru",
+      "start_date": "2026-12-10",
+      "end_date": "2026-12-16",
+      "qsl_via": "LoTW",
+      "notes": "By JM1GDA fm RI39ll; 80-6m; CW SSB FT8 FT4; QSL via Club Log OQRS",
+      "source": "ng3k-adxo"
+    },
+    {
+      "callsign": "VP8THW",
+      "entity": "Falkland Is",
+      "start_date": "2026-12-12",
+      "end_date": "2027-01-02",
+      "qsl_via": "LoTW",
+      "notes": "By DL7HW; 40 20 17 15 12 10m, focus on 40 20mm; SSB FT8; QSL via DL7HW Buro",
+      "source": "ng3k-adxo"
+    },
+    {
+      "callsign": "ZD7LC",
+      "entity": "St Helena",
+      "start_date": "2026-12-14",
+      "end_date": "2027-01-01",
+      "qsl_via": "LoTW",
+      "notes": "By ZR6LC; 40 20 17 15 12 10m; SSB CW; 5,100w; QSL via Club Log OQRS",
+      "source": "ng3k-adxo"
+    },
+    {
+      "callsign": "5H1RK",
+      "entity": "Tanzania",
+      "start_date": "2026-12-23",
+      "end_date": "2027-01-06",
+      "qsl_via": "LoTW",
+      "notes": "By SP3RK fm Bwejuu, Unguja I (IOTA AF-032) Zanzibar I; 20 17 15 12 10m; FT8 FT4 FT2, some CW; QRP; holiday style operation",
+      "source": "ng3k-adxo"
+    },
+    {
+      "callsign": "C5H",
+      "entity": "Gambia",
+      "start_date": "2026-12-27",
+      "end_date": "2027-01-03",
+      "qsl_via": "LoTW",
+      "notes": "By F4GJE fm Kotu West (IK13ok); 40-6m; SSB FT4 FT8; 250-300w; vertical, EFHW",
+      "source": "ng3k-adxo"
+    },
+    {
+      "callsign": "S79",
+      "entity": "Seychelles",
+      "start_date": "2026-12-28",
+      "end_date": "2027-01-08",
+      "qsl_via": "LoTW",
+      "notes": "By OK2ZA OK6DJ as S79/OL1T; HF; QSL via Club Log OQRS or OK6DJ (B/d)",
+      "source": "ng3k-adxo"
+    },
+    {
+      "callsign": "KH0",
+      "entity": "Marianas",
+      "start_date": "2026-12-29",
+      "end_date": "2027-01-03",
+      "qsl_via": "LoTW",
+      "notes": "By AJ6VJ as KH0/AJ6VJ fm Saipan I; 40-10m, perhaps 80m; CW FT8; QSL via Club Log OQRS or eQSL",
+      "source": "ng3k-adxo"
+    },
+    {
+      "callsign": "T88SM",
+      "entity": "Palau",
+      "start_date": "2027-01-08",
+      "end_date": "2027-01-14",
+      "qsl_via": "JA6EGL",
+      "notes": "By JA6EGL fm Koror (VIP Guest Hotel); 160-6m; CW SSB AM FM",
+      "source": "ng3k-adxo"
+    },
+    {
+      "callsign": "8P9CB",
+      "entity": "Barbados",
+      "start_date": "2027-01-09",
+      "end_date": "2027-01-21",
+      "qsl_via": "LoTW",
+      "notes": "By WA7RAR 20-10m; SSB CW; QSL: Chris Billings, PO Box 1383, Shady Cove, Oregon, 97539, USA; SASE/green stamps NOT required",
+      "source": "ng3k-adxo"
+    },
+    {
+      "callsign": "VP8TOG",
+      "entity": "Falkland Is",
+      "start_date": "2027-01-10",
+      "end_date": "2027-10-17",
+      "qsl_via": "LoTW",
+      "notes": "By LU2DUR fm East Falkland; 40 20 15 10m, peraps 80m; SSB, some FT8; QSL via Club Log OQRS",
+      "source": "ng3k-adxo"
+    },
+    {
+      "callsign": "V6XG",
+      "entity": "Micronesia",
+      "start_date": "2027-01-14",
+      "end_date": "2027-01-22",
+      "qsl_via": "LoTW",
+      "notes": "By JA1XGI fm Chuuk I (IOTA OC-011, QJ57wk); 160-6m, focus on 160m for EU NA SA; CW SSB + digital; 500w; verticals; holiday style operation; QSL via Club Log OQRS or JA1XGI (B/d)",
+      "source": "ng3k-adxo"
+    },
+    {
+      "callsign": "XT2MAX",
+      "entity": "Burkina Faso",
+      "start_date": "2027-01-17",
+      "end_date": "2027-01-24",
+      "qsl_via": "LoTW",
+      "notes": "By DK1MAX fm Ouagadougou; HF; CW SSB FT8; 100w; vertical, OCF dipole; QSL via DK1MAX",
+      "source": "ng3k-adxo"
+    },
+    {
+      "callsign": "PJ7",
+      "entity": "Sint Maarten",
+      "start_date": "2027-01-19",
+      "end_date": "2027-01-27",
+      "qsl_via": "LoTW",
+      "notes": "By N4XTT as PJ7/N4XTT fm Simpson Bay; HF; holiday style operation; dates tentative",
+      "source": "ng3k-adxo"
+    },
+    {
+      "callsign": "3Y0L",
+      "entity": "Peter I",
+      "start_date": "2027-02-01",
+      "end_date": "2027-02-28",
+      "qsl_via": "LoTW",
+      "notes": "By 19 ops for 2 weeks during February",
+      "source": "ng3k-adxo"
+    },
+    {
+      "callsign": "V4",
+      "entity": "St Kitts & Nevis",
+      "start_date": "2027-02-03",
+      "end_date": "2027-03-03",
+      "qsl_via": "LoTW",
+      "notes": "By K0YA as V47YA and W5RCX as V47RCX fm St Kitts I; 160-6m; CW SSB FT8, V47RCX FT8 only; QSL OK via home_call",
+      "source": "ng3k-adxo"
+    },
+    {
+      "callsign": "H44MS",
+      "entity": "Solomon Is",
+      "start_date": "2027-02-05",
+      "end_date": "2027-05-07",
+      "qsl_via": "LoTW",
+      "notes": "By DL2GAC; 80-10m; mainly FT8, some SSB; QSL via DL2GAC (B/d)",
+      "source": "ng3k-adxo"
+    },
+    {
+      "callsign": "T8KT",
+      "entity": "Palau",
+      "start_date": "2027-02-10",
+      "end_date": "2027-02-18",
+      "qsl_via": "LoTW",
+      "notes": "By 7K4TKB JA6FWJ JF3LGC JF3PLF JH3FHR JH3QNH JH3TXR JI3NST JI6DUE JN3JBC JN3RAZ JR3FOS; 160-6m; SSB CW + digital; QSL via Club Log OQRS or JA Buro; commemorating JARL Kyoto Club's 80th Anniversary",
+      "source": "ng3k-adxo"
+    },
+    {
+      "callsign": "6O6X",
+      "entity": "Somalia",
+      "start_date": "2027-02-15",
+      "end_date": "2027-02-27",
+      "qsl_via": "TBA",
+      "notes": "By ops fm Berbera (LK20mk); HF",
+      "source": "ng3k-adxo"
+    },
+    {
+      "callsign": "3A",
+      "entity": "Monaco",
+      "start_date": "2027-03-02",
+      "end_date": "2027-03-09",
+      "qsl_via": "LoTW",
+      "notes": "By WE9G as 3A/WE9G; 80-6m; FT8 FT4, some SSB CW; vertical, EFHW; QSL via Club Log OQRS or WE9G (B/d)",
+      "source": "ng3k-adxo"
+    },
+    {
+      "callsign": "J6",
+      "entity": "St Lucia",
+      "start_date": "2027-03-09",
+      "end_date": "2027-03-15",
+      "qsl_via": "LoTW",
+      "notes": "By KB4YKC as J6/KB4YKC and KB4PML as J6/KB4PML; @J68HZ; HF; SSB; holiday style operation",
+      "source": "ng3k-adxo"
+    },
+    {
+      "callsign": "VP0SG",
+      "entity": "South Georgia I",
+      "start_date": "2027-03-12",
+      "end_date": "2027-03-26",
+      "qsl_via": "M0OXO",
+      "notes": "By LA7THA LB1QI LB5GI W0ZB DL3ON EI5LA F4HEC G0VJG G4PVM IU2EFB KN2P LA3BO OE7PGI OK2WX UR8UQ UT5UY; 160-6m; CW SSB + digital and QO100; 6 stns, 24/24 hrs; dates tentative",
+      "source": "ng3k-adxo"
+    },
+    {
+      "callsign": "T8",
+      "entity": "Palau",
+      "start_date": "2027-04-08",
+      "end_date": "2027-04-14",
+      "qsl_via": "See Info",
+      "notes": "By JM1LIG JO3LVG JG1LFF as T88FM T88MK T88XM fm Koror I (IOTA OC-009, PJ77fi); HF; QSL: T88FM via JM1LIG, T88MK via JO3LVG (B/d), T88XM via LoTW or JG1LFF (B/d)",
+      "source": "ng3k-adxo"
+    },
+    {
+      "callsign": "E51RAR",
+      "entity": "South Cook Is",
+      "start_date": "2027-04-12",
+      "end_date": "2027-04-22",
+      "qsl_via": "LoTW",
+      "notes": "By WA7RAR fm Rarotonga I; 20-10m; SSB CW; POTA activation; QSL via WA7RAR direct",
+      "source": "ng3k-adxo"
+    },
+    {
+      "callsign": "FO",
+      "entity": "French Polynesia",
+      "start_date": "2027-05-17",
+      "end_date": "2027-05-24",
+      "qsl_via": "LoTW",
+      "notes": "By WE9G as FO/WE9G fm Mangareva I (IOTA OC-063); 80-6m; FT8 FT4, some SSB CW; QSL via Club Log OQRS",
+      "source": "ng3k-adxo"
+    },
+    {
+      "callsign": "VK2LHW",
+      "entity": "Lord Howe I",
+      "start_date": "2027-05-24",
+      "end_date": "2027-06-07",
+      "qsl_via": "LoTW",
+      "notes": "By DL2AWG DF4GV DL2AMD DL2SAX DL1KWK DL6RY DL4VK DJ7TO EA5GVH DL4SVA; HF + 6m; SSB CW + digital; 4 stns, 24/7; QSL via Club Log OQRS or DL2AWG",
+      "source": "ng3k-adxo"
+    },
+    {
+      "callsign": "V4",
+      "entity": "St Kitts & Nevis",
+      "start_date": "2027-05-27",
+      "end_date": "2027-06-03",
+      "qsl_via": "LoTW",
+      "notes": "By WW6W as V4/WW6W fm St Kitts I; QRV for CQWW WPX CW contest; QSL via WW6W",
+      "source": "ng3k-adxo"
+    },
+    {
+      "callsign": "VP6W",
+      "entity": "Pitcairn I",
+      "start_date": "2027-05-27",
+      "end_date": "2027-06-12",
+      "qsl_via": "LoTW",
+      "notes": "By WE9G fm CG44ww; 80-6m; FT8 FT4, some SSB CW; QSL via Club Log OQRS",
+      "source": "ng3k-adxo"
+    },
+    {
+      "callsign": "9M8T",
+      "entity": "East Malaysia",
+      "start_date": "2027-06-04",
+      "end_date": "2027-06-20",
+      "qsl_via": "LoTW",
+      "notes": "By 9M8WIN 9M8BAT 9M2WAZ 9M2MAD 9M2RSI 9M2DOC 9M2SPN 9M8LJW 9W8VYY fm Big Talang-Talang I, Sarawak, (IOTA OC-165, OJ41vv); 80-6m, perhaps 160m; CW SSB + FT modes; QSL via Club Log OQRS, 9W8ZZK direct (include 4USD)",
+      "source": "ng3k-adxo"
+    },
+    {
+      "callsign": "FP",
+      "entity": "St Pierre & Miquelon",
+      "start_date": "2027-06-26",
+      "end_date": "2027-07-13",
+      "qsl_via": "LoTW",
+      "notes": "By KV1J as FP/KV1J; 80-6m; SSB CW FT8; QSL via Club Log OQRS or KV1J direct; QRV for IARU contest",
+      "source": "ng3k-adxo"
+    },
+    {
+      "callsign": "XU7X",
+      "entity": "Cambodia",
+      "start_date": "2027-11-13",
+      "end_date": "2027-11-23",
+      "qsl_via": "M0URX",
+      "notes": "By 24 ops fm Koh Rong I (IOTA AS-133, OK10pq, WWFF XU-0008); 7 stns; 160-6m; CW SSB FT8 FT4 RTTY PSK31; auto-LoTW after 1 year",
+      "source": "ng3k-adxo"
+    },
+    {
+      "callsign": "DXCC",
+      "entity": "Contest",
+      "start_date": null,
+      "end_date": null,
+      "qsl_via": "CIS-Pfx",
+      "notes": "",
+      "source": "ng3k-adxo"
+    }
+  ]
+}
