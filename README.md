@@ -1,132 +1,86 @@
 # DXpedition Notifier
 
-An automated DX Cluster monitoring tool for amateur radio operators. The project downloads live spots from **HamQTH**, cross-references them with active expeditions published by **NG3K ADXO**, optionally evaluates propagation and grayline conditions through HamQSL/NOAA data, and sends formatted alerts to **Telegram**.
+An automated DX Cluster monitoring tool for amateur radio operators. It downloads live spots from **HamQTH**, matches them against active expeditions listed by **NG3K ADXO**, applies continent and heuristic filters, limits repeated notifications, evaluates propagation and grayline conditions, draws a DX paths map, and optionally sends text alerts and PNG images through **Telegram**.
 
-It is designed for manual runs or scheduled jobs and uses local JSON files instead of an external database.
+The project is cron-friendly and uses local JSON/cache files instead of a database. Python 3.10+ is required.
 
-## Main Features
+## English Documentation
 
-### HamQTH DX Cluster ingestion
+### Features
 
-- Downloads the CSV feed from `https://www.hamqth.com/dxc_csv.php`.
-- Automatically recognizes `^`, `;`, or `,` delimiters.
-- Converts frequencies expressed in MHz to kHz.
-- Keeps the spotter, DX callsign, frequency, comment, UTC time, DX continent, band, DXCC entity, and original row.
-- Uses a 15-second network timeout and reports network errors clearly.
+- Downloads HamQTH CSV spots and detects `^`, `;`, or `,` delimiters.
+- Converts MHz-like frequencies to kHz while preserving already-normalized kHz values.
+- Loads and periodically refreshes an NG3K DXpedition cache.
+- Resolves callsign prefixes to continents, with an optional home-continent spotter filter.
+- Matches complete callsigns, slash-separated callsign segments, aliases, and active date ranges.
+- Supports heuristic `NORMAL` matches for expedition keywords, `UP`, slash callsigns, and foreign-continent DX.
+- Deduplicates notifications by callsign and band or by an approximate 2 kHz frequency bucket.
+- Retrieves HamQSL/NOAA solar data and caches it locally.
+- Calculates approximate grayline windows and classifies an informational path assessment.
+- Generates a 1000×500 PNG great-circle paths map with grid, countries, day/night shading, and grayline shading.
+- Sends formatted Telegram text messages, optional silent notifications, and an optional map photo.
+- Provides CLI overrides and test modes.
 
-### DXpedition database
+### Execution Flow
 
-- Loads `dxpeditions.json`, a local index containing update metadata.
-- Refreshes the list from NG3K ADXO when the file is missing or older than `MAX_DXPED_AGE_HOURS`.
-- The default maximum age is 12 hours.
-- Beautiful Soup extracts the primary callsign, aliases, entity, dates, QSL route, and notes.
-- If the refresh fails or returns no entries, the existing local list is preserved.
+On every normal run, `main.py`:
 
-### Filtering and priorities
+1. Loads `.env` without replacing variables already present in the process environment.
+2. Determines the callsign from `--callsign` or `MY_CALLSIGN`, and derives the home continent.
+3. Loads cached solar data or fetches fresh HamQSL/NOAA XML data.
+4. Loads `dxpeditions.json`, refreshing it from NG3K if missing or older than `MAX_DXPED_AGE_HOURS`.
+5. Downloads and parses HamQTH spots.
+6. Filters spotters, matches DXpeditions, and applies heuristic rules.
+7. Removes entries outside the deduplication window and rejects recently notified keys.
+8. Prints up to 20 new matches, sorted with `HIGH` before `NORMAL`.
+9. Generates `dx_paths_map.png` when a map module and new matches are available.
+10. Sends Telegram text alerts according to `TELEGRAM_NOTIFY_MODE`.
+11. Optionally sends the map PNG when `--send-map` is used.
 
-Each spot is checked against the configured spotter-continent filter and classified as `HIGH` or `NORMAL`.
+`--test-telegram` performs a Telegram credential test and stops before spot processing. `--no-telegram` suppresses both text and map delivery.
 
-#### Home-continent spotter filter
-
-With `REQUIRE_HOME_CONTINENT_SPOTTER=true`, only spots reported from the same continent as the configured callsign are accepted. `prefixes.py` resolves the continent from the callsign prefix. If a callsign is not recognized, the application falls back to `EU`.
-
-Set `REQUIRE_HOME_CONTINENT_SPOTTER=false` to disable this filter.
-
-#### `HIGH` priority
-
-A spot is `HIGH` when its DX callsign matches an active DXpedition. Matching includes:
-
-- the complete callsign;
-- each slash-separated callsign segment;
-- aliases extracted from the NG3K notes;
-- the start/end date window from `start_date` and `end_date`.
-
-If the UTC field contains `YYYY-MM-DD`, the match is checked against that date. If no date is present, date-window parsing cannot restrict the match.
-
-#### `NORMAL` priority
-
-A spot can receive `NORMAL` priority through one or more heuristics, even if it is not a direct DXpedition match:
-
-- Comment keywords: `dxped`, `dx-ped`, `dx expedition`, `expedition`, `qsx`, `split`, `iota`, `sota`, `pota`, `wwff`.
-- The standalone word `UP` in the comment.
-- A `/` in the DX callsign.
-- A DX continent different from the configured home continent.
-
-### Deduplication
-
-Notified spot keys are stored in `seen_spots.json`:
-
-- Default key: `DX_CALL|BAND`.
-- When a band is missing: `DX_CALL|~FREQkHz`, with frequency rounded to approximately 2 kHz buckets.
-- Entries older than `DEDUP_WINDOW_MINUTES` are automatically removed.
-- The default window is 30 minutes.
-
-The state file is updated after each run, including runs that produce no notification.
-
-### Propagation information
-
-If `propagation.py` is available, `main.py` optionally enriches alerts with HamQSL/NOAA data:
-
-- Downloads solar XML data from HamQSL.
-- Reads the Solar Flux Index (SFI), K index, A index, and X-ray activity.
-- Caches data in `prop_cache.json` for `PROP_CACHE_MINUTES` minutes.
-- Uses stale cache data as a fallback when live data cannot be retrieved.
-- Adds a band-, geomagnetic-, intercontinental-, trans-equatorial-, and grayline-aware path note.
-- Keeps propagation evaluation informational: it does not reject matching spots.
-
-Custom `MY_LAT` and `MY_LON` values can be supplied. Otherwise, approximate continent coordinates are used.
-
-### Telegram notifications
-
-- `HIGH` mode sends direct DXpedition matches only.
-- `HIGH_AND_NORMAL` sends both priority classes.
-- Notifications use HTML formatting, local/UTC timestamps, solar conditions, spot details, and path notes.
-- `TELEGRAM_SILENT=true` enables `disable_notification`.
-- Long alerts are split into Telegram-compatible parts.
-- `--test-telegram` sends a test message without processing the DX Cluster feed.
-
-HIGH matches are displayed and sent before NORMAL matches.
-
-## Project Structure
+### Project Files
 
 ```text
 dxpedition-notifier/
-├── main.py                      # CLI pipeline, filtering, deduplication, and Telegram
-├── fetch_ng3k_dxpeditions.py    # NG3K ADXO scraper and JSON normalizer
+├── main.py                      # Main CLI, filtering, state, propagation, Telegram, map coordination
+├── fetch_ng3k_dxpeditions.py    # NG3K HTML scraper and JSON cache generator
 ├── prefixes.py                  # Callsign-prefix-to-continent lookup
-├── propagation.py               # Solar data, propagation assessment, and grayline
-├── dxpeditions.json             # Local/generated DXpedition cache
-├── seen_spots.json              # Local deduplication state (gitignored)
-├── prop_cache.json              # Solar propagation cache (gitignored)
-├── .env                         # Local parameters and secrets (gitignored)
-├── README.md                    # Project documentation
-├── dx_monitor.log               # Optional cron log (gitignored)
-├── venv/                        # Local Python environment (gitignored)
-└── .gitignore
+├── propagation.py               # Solar XML, cache, grayline, and path assessment
+├── map_paths.py                 # PIL map, great-circle paths, GeoJSON countries, Telegram photo
+├── dxpeditions.json             # Generated DXpedition cache
+├── seen_spots.json              # Deduplication timestamps (gitignored)
+├── prop_cache.json              # Solar data cache (gitignored)
+├── dx_paths_map.png             # Generated DX paths map (gitignored)
+├── world_countries.geojson      # Optional local country outlines (gitignored)
+├── .env                         # Local configuration and secrets (gitignored)
+├── dx_monitor.log               # Optional cron output (gitignored)
+├── venv/                        # Local virtual environment (gitignored)
+├── .gitignore
+└── README.md
 ```
 
-If `propagation.py` or its dependencies are unavailable, `main.py` continues without propagation enrichment.
+All optional modules are loaded gracefully: propagation or map failures do not prevent basic DX monitoring where the required modules remain available.
 
-## Requirements
+### Requirements
 
-- macOS, Linux, or another compatible Python environment.
-- Python 3.10 or newer; the source uses annotations such as `str | None`.
-- Python packages:
-  - `requests`
-  - `beautifulsoup4`
+- Python 3.10 or newer.
+- `requests`.
+- `beautifulsoup4` for NG3K scraping.
+- `Pillow` for PNG map generation.
+- Internet access to HamQTH, NG3K, HamQSL/NOAA, and/or Telegram when those features are used.
 
-## Installation
+Install an environment:
 
 ```bash
-git clone <repository-url> dxpedition-notifier
-cd dxpedition-notifier
-
 python3 -m venv venv
 ./venv/bin/pip install --upgrade pip
-./venv/bin/pip install requests beautifulsoup4
+./venv/bin/pip install requests beautifulsoup4 Pillow
 ```
 
-Create `.env` in the project root:
+### Configuration
+
+Create `.env` in the project directory:
 
 ```env
 MY_CALLSIGN=IU4TRM
@@ -134,8 +88,8 @@ REQUIRE_HOME_CONTINENT_SPOTTER=true
 MAX_DXPED_AGE_HOURS=12
 DEDUP_WINDOW_MINUTES=30
 
-TELEGRAM_BOT_TOKEN=123456789:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-TELEGRAM_CHAT_ID=-1001234567890
+TELEGRAM_BOT_TOKEN=your_bot_token
+TELEGRAM_CHAT_ID=your_chat_id
 TELEGRAM_NOTIFY_MODE=HIGH_AND_NORMAL
 TELEGRAM_SILENT=false
 
@@ -144,27 +98,114 @@ MY_LON=11.3500
 PROP_CACHE_MINUTES=45
 ```
 
-Existing process environment variables are not overwritten by `_load_dotenv()`.
-
-## Configuration Reference
-
-| Variable | Default | Description |
+| Variable | Default | Purpose |
 | :--- | :--- | :--- |
-| `MY_CALLSIGN` | `IU4TRM` | Callsign used to determine the home continent. |
-| `REQUIRE_HOME_CONTINENT_SPOTTER` | `true` | Accept only spotters from the home continent. |
-| `MAX_DXPED_AGE_HOURS` | `12` | Maximum age of `dxpeditions.json` in hours. |
-| `DEDUP_WINDOW_MINUTES` | `30` | Time window for duplicate notifications. |
-| `TELEGRAM_BOT_TOKEN` | `""` | Telegram Bot API token. |
-| `TELEGRAM_CHAT_ID` | `""` | Telegram user, group, or channel destination. |
-| `TELEGRAM_NOTIFY_MODE` | `HIGH_AND_NORMAL` | `HIGH` or `HIGH_AND_NORMAL`. |
-| `TELEGRAM_SILENT` | `false` | Enables Telegram silent notifications. |
-| `MY_LAT` | approximate continent center | Latitude for grayline calculations. |
-| `MY_LON` | approximate continent center | Longitude for grayline calculations. |
-| `PROP_CACHE_MINUTES` | `45` | Lifetime of the solar-data cache. |
+| `MY_CALLSIGN` | `IU4TRM` | Default callsign used to determine the home continent. |
+| `REQUIRE_HOME_CONTINENT_SPOTTER` | `true` | Accept only spotters in the home continent. |
+| `MAX_DXPED_AGE_HOURS` | `12` | Maximum `dxpeditions.json` age before refreshing NG3K. |
+| `DEDUP_WINDOW_MINUTES` | `30` | Time window for repeated notification suppression. |
+| `TELEGRAM_BOT_TOKEN` | empty | Telegram bot token. |
+| `TELEGRAM_CHAT_ID` | empty | Telegram user, group, or channel ID. |
+| `TELEGRAM_NOTIFY_MODE` | `HIGH_AND_NORMAL` | `HIGH` for direct DXpedition matches only, or `HIGH_AND_NORMAL` for both priorities. |
+| `TELEGRAM_SILENT` | `false` | Sets Telegram `disable_notification`. |
+| `MY_LAT` | continent reference | Optional station latitude in decimal degrees. |
+| `MY_LON` | continent reference | Optional station longitude in decimal degrees. |
+| `PROP_CACHE_MINUTES` | `45` | Minimum lifetime of cached solar data. |
 
-Boolean values accepted as enabled: `1`, `true`, `yes`, `on`, case-insensitively.
+Boolean values `1`, `true`, `yes`, and `on` enable filtering and silent mode. Text is matched case-insensitively.
 
-## Usage
+### HamQTH Parsing
+
+`fetch_dxc_spots()` downloads the feed with a 15-second timeout and a DXpedition-Notifier User-Agent. It tries the first line to detect `^`, `;`, or `,` separators.
+
+The CSV columns used are:
+
+| Index | Field | Normalization |
+| ---: | :--- | :--- |
+| 0 | Spotter | Uppercase |
+| 1 | Frequency | MHz to kHz when represented as a decimal in the 1–60 range |
+| 2 | DX callsign | Uppercase |
+| 3 | Comment | Preserved text |
+| 4 | UTC/date | Preserved text |
+| 7 | DX continent | Uppercase and validated against six common continent codes |
+| 8 | Band | Uppercase |
+| 9 | DXCC entity | Preserved text |
+| 10 | DXCC ID | Preserved text |
+
+Malformed rows with fewer than four columns are skipped.
+
+### DXpedition Matching
+
+The NG3K scraper inspects table rows containing at least seven cells. It requires parseable start/end dates, removes `[spots]` from callsigns, uppercases callsigns, and extracts aliases matching an ampersand-style `as/using/callsign` pattern or full-looking slash/digit callsigns.
+
+The main matcher:
+
+- Builds a set from the complete DX callsign and every `/`-separated segment.
+- Compares that set with the primary callsign and each alias.
+- Extracts `YYYY-MM-DD` from the spot UTC field when available.
+- Accepts the entry only inside `start_date` and `end_date`, if present.
+- Returns the first matching entry.
+
+For `NORMAL` priority, the comment is searched for configured words, a standalone `UP` word, or a slash in the DX callsign. A DX continent obtained from the feed or callsign prefix is also considered when it differs from the home continent.
+
+### Callsign Prefixes
+
+`prefixes.py` provides a substantial amateur-radio prefix table and sorts prefixes from longest to shortest to improve special-prefix matching. When `/` is present, the callsign segments are sorted and checked before the full call.
+
+The result is one of `EU`, `NA`, `SA`, `AF`, `AS`, or `OC`. Unknown prefixes return `None`; the monitoring entry point falls back to `EU`.
+
+### Deduplication
+
+The state file `seen_spots.json` stores keys and notification timestamps:
+
+- With a band: `DX_CALL|BAND`.
+- Without a band: `DX_CALL|~NNNNkHz`, with frequency rounded to the nearest 2 kHz.
+- If frequency parsing fails: `DX_CALL|raw-frequency`.
+
+Each run reads and prunes entries whose age exceeds `DEDUP_WINDOW_MINUTES`. New keys are added before Telegram delivery, so repeated spot cycles are suppressed even if delivery fails or Telegram credentials are missing.
+
+### Propagation
+
+The optional `propagation.py` module:
+
+- Fetches HamQSL solar XML with a 10-second timeout.
+- Parses SFI, K index, A index, and X-ray value.
+- Classifies conditions as disturbed, unsettled, good/high-band, moderate, quiet/low-mid, unknown, or unavailable.
+- Caches successful responses for `PROP_CACHE_MINUTES`.
+- Reuses stale cache data when a refresh fails, while preserving an error field.
+- Approximates solar elevation using the station coordinates or continent reference coordinates.
+- Defines grayline as approximately ±6 degrees of solar elevation.
+
+Path assessment is informational and never removes a spot. It distinguishes high bands, mid bands, low bands, intra-continental paths, high-latitude paths, trans-equatorial paths, geomagnetic disturbance, and grayline conditions.
+
+### DX Paths Map
+
+The optional `map_paths.py` module uses Pillow and can use `world_countries.geojson` for country outlines. Without GeoJSON, it still renders the grid, grayline/night fields, great-circle arcs, markers, labels, and title.
+
+The map:
+
+- Uses a 1000×500 equirectangular projection.
+- Draws great-circle paths from the station QTH to resolved DX coordinates.
+- Uses red paths for `HIGH` matches and cyan paths for `NORMAL` matches.
+- Highlights countries at or near destination coordinates when GeoJSON is available.
+- Shows a green station marker, call labels, UTC timestamp, and path count.
+- Saves `dx_paths_map.png` whenever at least one destination can be resolved.
+
+Map generation does not depend on Telegram delivery. The PNG is always generated before the optional `--send-map` photo is considered.
+
+### Telegram
+
+Text messages use Telegram HTML mode. The maximum chunk size is intentionally 3900 characters to leave margin below Telegram's 4096-character limit.
+
+- `send_telegram_test()` sends station and propagation details without spot processing.
+- `send_telegram_alerts()` filters `HIGH`/`NORMAL` according to the notify mode and splits long output.
+- `_send_telegram_text()` escapes user/feed fields and posts to `sendMessage`.
+- `--send-map` calls `sendPhoto` for `TELEGRAM_CHAT_ID` only; it does not support multiple chat IDs in the current implementation.
+- Silent mode applies to text and photo delivery.
+
+Telegram API response or network errors are printed and do not stop the rest of the local run.
+
+### CLI Usage
 
 Run a complete monitoring cycle:
 
@@ -172,43 +213,54 @@ Run a complete monitoring cycle:
 ./venv/bin/python main.py
 ```
 
-Send a Telegram test message:
+Override the callsign:
 
 ```bash
-./venv/bin/python main.py --test-telegram
+./venv/bin/python main.py --callsign W6PQR
 ```
 
-Run without Telegram delivery:
+Skip Telegram delivery:
 
 ```bash
 ./venv/bin/python main.py --no-telegram
 ```
 
-Override the callsign for one run:
+Test Telegram credentials:
 
 ```bash
-./venv/bin/python main.py --callsign K1ABC
+./venv/bin/python main.py --test-telegram
 ```
 
-Refresh the NG3K DXpedition cache manually:
+Generate and send the paths map:
+
+```bash
+./venv/bin/python main.py --send-map
+```
+
+Combine independent options:
+
+```bash
+./venv/bin/python main.py --callsign W6PQR --no-telegram
+./venv/bin/python main.py --test-telegram --callsign W6PQR
+```
+
+Refresh the DXpedition cache manually:
 
 ```bash
 ./venv/bin/python fetch_ng3k_dxpeditions.py
 ```
 
-## macOS Cron Example
-
-Run every 15 minutes:
+### macOS Cron Example
 
 ```cron
 */15 * * * * cd /Users/name/dxpedition-notifier && /Users/name/dxpedition-notifier/venv/bin/python /Users/name/dxpedition-notifier/main.py >> /Users/name/dxpedition-notifier/dx_monitor.log 2>&1
 ```
 
-Use absolute paths. On macOS, `cron` may require folder permissions under **System Settings → Privacy & Security**, especially for folders under `~/Documents`.
+Use absolute paths. macOS cron may require folder access in **System Settings → Privacy & Security** when the project is located under `~/Documents`.
 
-## Local Data Formats
+### Local JSON Examples
 
-`dxpeditions.json` contains metadata and an array of DXpedition entries:
+`dxpeditions.json`:
 
 ```json
 {
@@ -219,7 +271,22 @@ Use absolute paths. On macOS, `cron` may require folder permissions under **Syst
 }
 ```
 
-`seen_spots.json` maps deduplicated keys to POSIX timestamps:
+A typical entry:
+
+```json
+{
+  "callsign": "5X7W",
+  "aliases": ["5X1Q"],
+  "entity": "Uganda",
+  "start_date": "2026-11-08",
+  "end_date": "2026-12-29",
+  "qsl_via": "LoTW",
+  "notes": "Operations and planned modes",
+  "source": "ng3k-adxo"
+}
+```
+
+`seen_spots.json`:
 
 ```json
 {
@@ -228,209 +295,166 @@ Use absolute paths. On macOS, `cron` may require folder permissions under **Syst
 }
 ```
 
-`prop_cache.json` stores a retrieval timestamp and the latest available solar payload.
+`prop_cache.json`:
 
-## Git and Security
+```json
+{
+  "fetched_at": 1795372644.181173,
+  "data": {
+    "sfi": 150,
+    "k_index": 2,
+    "a_index": 5,
+    "xray": "C1.2",
+    "condition": "Good HF / High bands",
+    "source": "HamQSL/NOAA",
+    "updated_utc": "2026-11-22 18:37 UTC"
+  }
+}
+```
 
-The current `.gitignore` excludes runtime state, credentials, Python environments, logs, editor settings, and macOS metadata, including:
+### Git and Security
+
+The `.gitignore` should exclude runtime data, credentials, environments, caches, logs, editor settings, and macOS metadata:
 
 ```gitignore
 dxpeditions.json
 seen_spots.json
 prop_cache.json
+dx_paths_map.png
+world_countries.geojson
 .env
-*.pyc
-__pycache__/
-venv/
+dx_monitor.log
 .DS_Store
 **/.DS_Store
 .vscode/settings.json
-dx_monitor.log
+__pycache__/
+*.py[cod]
+.venv/
+venv/
 ```
 
-Do not commit Telegram credentials or `.env`. If a file was previously committed, remove it from the index without deleting the local copy:
+Do not commit `.env` or Telegram credentials. If a runtime file was previously tracked, remove it from the index without deleting the local copy:
 
 ```bash
-git rm --cached .DS_Store
-git commit -m "Stop tracking macOS .DS_Store"
+git rm --cached filename
+git commit -m "Stop tracking local runtime file"
 ```
 
-Verify tracked and untracked files with:
+Check repository state with:
 
 ```bash
 git status
 git ls-files
 ```
 
-## Troubleshooting
+### Troubleshooting
 
-- **Telegram receives nothing:** verify `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID`, bot permissions, and `TELEGRAM_NOTIFY_MODE`; run `--test-telegram`.
-- **The same spot is ignored:** check `seen_spots.json` and `DEDUP_WINDOW_MINUTES`.
-- **No matches are found:** check `REQUIRE_HOME_CONTINENT_SPOTTER` and the callsign continent mapping.
-- **DXpedition data is stale:** run `fetch_ng3k_dxpeditions.py` manually and verify network access to NG3K.
-- **Solar data is unavailable:** the application continues using cache, or reports `Unavailable` if no data exists.
-- **A callsign resolves to the wrong continent:** use `--callsign` for a one-off run or extend `PREFIX_TO_CONTINENT` in `prefixes.py`.
+- **Telegram receives nothing:** verify token, chat ID, bot permissions, and notify mode; run `--test-telegram`.
+- **A spot is still suppressed:** inspect `seen_spots.json` and `DEDUP_WINDOW_MINUTES`.
+- **No DXpedition matches:** check NG3K freshness and active date windows.
+- **Many spots are filtered:** set `REQUIRE_HOME_CONTINENT_SPOTTER=false` or verify the callsign prefix.
+- **Unknown callsign continent:** extend `PREFIX_TO_CONTINENT` or override the callsign for one run.
+- **Solar data unavailable:** a valid cache is reused; otherwise propagation reports `Unavailable` and monitoring continues.
+- **Map not generated:** verify Pillow is installed and at least one DX match has resolvable coordinates.
+- **Map photo not sent:** add `--send-map`, set bot credentials, and verify that no `--no-telegram` flag is present.
+- **No HamQTH spots:** verify network access and the CSV feed response format.
 
-NG3K, HamQTH, HamQSL, or Telegram outages do not need to stop the remaining monitoring logic permanently: the application reports the failure and preserves available local state whenever possible.
+### Failure Behavior
+
+The project is designed for periodic automation:
+
+- NG3K refresh failure preserves the existing local DXpedition list.
+- HamQTH network errors stop the current cycle with an informative message.
+- Propagation failures produce an unavailable or cached summary.
+- Telegram failures do not revert the deduplication state.
+- Missing Telegram credentials skip delivery rather than failing the run.
+- Missing Pillow or map dependencies disable map generation and photo delivery gracefully.
 
 ---
 
 # Dokumentazione in italiano
 
-# DXpedition Notifier
+## Panoramica
 
-Uno strumento automatico per monitorare lo DX Cluster tramite il feed CSV pubblico di **HamQTH**, incrociare gli spot con le spedizioni attive pubblicate da **NG3K ADXO**, valutare la propagazione tramite dati solari HamQSL/NOAA e inviare allarmi HTML tramite **Telegram**.
+DXpedition Notifier è uno strumento automatico per operatori radioamatoriali che scarica spot dal DX Cluster pubblico **HamQTH**, li confronta con spedizioni attive pubblicate da **NG3K ADXO**, applica filtri geografici ed euristiche, evita notifiche ripetute, valuta la propagazione, genera una mappa delle tratte e può inviare messaggi e immagini tramite **Telegram**.
 
-Il progetto è pensato per esecuzioni periodiche da terminale o `cron`, con filtri configurabili, stato locale persistente e nessuna dipendenza da database esterni.
+Il progetto è adatto a cron e usa file JSON/cache locali senza database esterni. Richiede Python 3.10 o superiore.
 
----
+## Funzionalità
 
-## Funzionalità principali
+- Scarica il feed CSV HamQTH rilevando separatori `^`, `;` o `,`.
+- Normalizza frequenze MHz in kHz.
+- Aggiorna una cache locale delle DXpedition da NG3K ADXO.
+- Ricava il continente dai prefissi dei nominativi.
+- Confronta chiamate complete, segmenti slash, alias e date di attività.
+- Produce match `HIGH` e match euristici `NORMAL`.
+- Deduplica per nominativo/banda o frequenza approssimativa.
+- Legge dati solari HamQSL/NOAA e li salva in cache.
+- Valuta grayline e propagazione in modo informativo.
+- Genera una mappa PNG 1000×500 con tratte great-circle, paesi, luce/notte e grayline.
+- Invia testo Telegram, messaggi silenziosi e facoltativamente la mappa PNG.
+- Supporta override da CLI e test Telegram.
 
-### Monitoraggio dello DX Cluster
+## Flusso di esecuzione
 
-- Scarica gli spot da `https://www.hamqth.com/dxc_csv.php`.
-- Rileva automaticamente il separatore `^`, `;` o `,`.
-- Normalizza le frequenze espresse in MHz nel formato kHz.
-- Conserva nominativo, frequenza, commento, ora UTC, continente DX, banda, entità DXCC e riga originale.
-- Usa un timeout HTTP di 15 secondi e restituisce messaggi chiari in caso di problemi di rete.
+A ogni esecuzione normale `main.py`:
 
-### Lista delle DXpedition
+1. legge `.env` senza sovrascrivere variabili già presenti nell'ambiente;
+2. determina callsign da `--callsign` o `MY_CALLSIGN`;
+3. determina il continente locale tramite `prefixes.py`;
+4. legge o aggiorna i dati solari;
+5. carica o aggiorna `dxpeditions.json` da NG3K;
+6. scarica gli spot HamQTH;
+7. valuta continente dello spotter, match DXpedition ed euristiche;
+8. elimina duplicati nelle finestre temporali;
+9. ordina i nuovi match, `HIGH` prima di `NORMAL`;
+10. stampa fino a 20 risultati;
+11. genera la mappa se ci sono match e `Pillow` è disponibile;
+12. invia testo Telegram secondo la modalità configurata;
+13. invia facoltativamente la mappa con `--send-map`.
 
-- Legge `dxpeditions.json`, un indice locale con metadati di aggiornamento.
-- Aggiorna automaticamente la lista da NG3K ADXO se il file manca oppure è più vecchio del limite configurato.
-- Il limite predefinito è `MAX_DXPED_AGE_HOURS=12` ore.
-- La pagina viene analizzata con Beautiful Soup; vengono estratti nominativo principale, alias, entità, date, QSL e note.
-- Se il refresh di rete fallisce o restituisce zero risultati, il file locale esistente viene conservato.
-
-### Filtri e priorità
-
-Ogni spot viene prima valutato contro il continente dello spotter, quindi classificato come `HIGH` o `NORMAL`.
-
-#### Filtro continente dello spotter
-
-`REQUIRE_HOME_CONTINENT_SPOTTER=true` permette di accettare soltanto spot provenienti da spotter appartenenti al continente del proprio callsign. Il continente viene ricavato da `prefixes.py`; se il callsign non è riconosciuto, il progetto usa `EU` come fallback.
-
-Il parametro può essere disattivato impostando `REQUIRE_HOME_CONTINENT_SPOTTER=false`.
-
-#### Match `HIGH`
-
-Uno spot è `HIGH` quando il nominativo DX corrisponde a una DXpedition attiva. Il confronto considera:
-
-- chiamata completa;
-- singoli segmenti separati da `/`;
-- alias estratti dalle note NG3K;
-- finestra temporale tra `start_date` ed `end_date`.
-
-Se UTC dello spot contiene una data `YYYY-MM-DD`, la corrispondenza viene verificata all’interno della spedizione. Se la data non è presente, le regole temporali vengono applicate solo finché il formato può essere verificato.
-
-#### Match `NORMAL`
-
-Uno spot può ottenere priorità `NORMAL` anche senza corrispondenza diretta nella lista, se il commento contiene una delle parole chiave configurate:
-
-`dxped`, `dx-ped`, `dx expedition`, `expedition`, `qsx`, `split`, `iota`, `sota`, `pota`, `wwff`
-
-Sono inoltre applicate le euristiche:
-
-- parola autonoma `UP` nel commento;
-- slash `/` nel nominativo DX;
-- continente DX diverso dal continente di riferimento.
-
-### Deduplicazione
-
-Lo stato dei nuovi spot viene salvato in `seen_spots.json`.
-
-- Chiave predefinita: `DX_CALL|BAND`.
-- Se manca la banda, usa una frequenza arrotondata a intervalli di circa 2 kHz: `DX_CALL|~FREQkHz`.
-- Gli elementi scaduti oltre `DEDUP_WINDOW_MINUTES` vengono rimossi automaticamente.
-- Valore predefinito della finestra: 30 minuti.
-
-Il file viene aggiornato ad ogni ciclo, anche quando nessun nuovo messaggio viene inviato.
-
-### Informazioni sulla propagazione
-
-Se il modulo `propagation.py` è disponibile, il programma può integrare i dati solari e una valutazione informativa del percorso.
-
-- Scarica dati XML da HamQSL/NOAA.
-- Legge Solar Flux Index (SFI), indici K e A e tipo di flare solare.
-- Conserva i dati in `prop_cache.json` per evitare richieste troppo frequenti.
-- Usa dati da cache alla scadenza o dati precedenti come fallback in caso di errore di rete.
-- Valuta bande alte/basse, disturbo geomagnetico, tratte intercontinentali, trans-equatoriali e finestre di grayline.
-- Aggiunge una nota al log e ai messaggi Telegram, ma non elimina lo spot dal filtro.
-
-La valutazione usa coordinate personalizzate se definite oppure coordinate indicative del continente. È puramente orientativa e non sostituisce previsioni professionali.
-
-### Notifiche Telegram
-
-- Modalità `HIGH`: invia soltanto corrispondenze dirette alle DXpedition.
-- Modalità `HIGH_AND_NORMAL`: invia sia `HIGH` sia `NORMAL`.
-- Messaggi in HTML con timestamp locale e UTC, richieste solari e dettagli dello spot.
-- Flag opzionale `disable_notification` per le notifiche silenziose.
-- Suddivisione automatica in parti quando il contenuto potrebbe superare il limite Telegram.
-- Comando `--test-telegram` per verificare token e chat senza processare gli spot.
-
-I match sono ordinati prima per priorità `HIGH` e poi `NORMAL` nella console e nei messaggi Telegram.
-
----
+`--test-telegram` verifica Telegram e interrompe il flusso prima degli spot. `--no-telegram` impedisce testo e foto.
 
 ## Struttura del progetto
 
 ```text
 dxpedition-notifier/
-├── main.py                      # Pipeline principale, CLI, filtri, deduplica e Telegram
-├── fetch_ng3k_dxpeditions.py    # Scraper NG3K ADXO e normalizzazione JSON
-├── prefixes.py                  # Mappa prefissi callsign -> continente
-├── propagation.py               # Dati solari, propagazione e grayline
-├── dxpeditions.json             # Cache locale delle DXpedition (generata/aggiornata)
-├── seen_spots.json              # Stato locale della deduplicazione (gitignored)
-├── prop_cache.json              # Cache dati propagazione (gitignored)
-├── .env                         # Parametri locali e segreti (gitignored)
-├── README.md                    # Documentazione del progetto
-├── dx_monitor.log               # Log opzionale usato da cron (gitignored)
-├── venv/                        # Ambiente Python locale (gitignored)
-└── .gitignore
+├── main.py                      # Pipeline, filtri, stato, Telegram e coordinamento mappa
+├── fetch_ng3k_dxpeditions.py    # Scraper NG3K e generatore JSON
+├── prefixes.py                  # Callsign -> continente
+├── propagation.py               # Dati solari, cache, grayline e percorso
+├── map_paths.py                 # Mappa PIL, great-circle, GeoJSON e foto Telegram
+├── dxpeditions.json             # Cache DXpedition generata
+├── seen_spots.json              # Timestamp deduplicazione (gitignored)
+├── prop_cache.json              # Cache dati solari (gitignored)
+├── dx_paths_map.png             # Mappa generata (gitignored)
+├── world_countries.geojson      # Contorni paese opzionali (gitignored)
+├── .env                         # Parametri e segreti locali (gitignored)
+├── dx_monitor.log               # Output cron opzionale (gitignored)
+├── venv/                        # Ambiente virtuale (gitignored)
+├── .gitignore
+└── README.md
 ```
 
-Nota: `main.py` importa `propagation.py` facoltativamente. Se il modulo o le sue dipendenze non sono disponibili, il monitoraggio normale continua a funzionare senza analisi propagazione.
-
----
+L'importazione di propagazione e mappa è gestita come opzionale. Un'eventuale indisponibilità non impedisce il monitoraggio HamQTH di base.
 
 ## Requisiti
 
-- macOS, Linux o un altro ambiente Python compatibile.
-- Python 3.10 o superiore, perché il codice usa annotazioni moderne come `str | None`.
-- Pacchetti Python:
-  - `requests`
-  - `beautifulsoup4`
+- Python 3.10 o superiore.
+- `requests`.
+- `beautifulsoup4`.
+- `Pillow`.
+- Accesso internet ai servizi HamQTH, NG3K, HamQSL/NOAA e Telegram, in base alle funzioni utilizzate.
 
-Esempio per macOS/Linux:
-
-```bash
-python3 -m venv venv
-./venv/bin/pip install --upgrade pip
-./venv/bin/pip install requests beautifulsoup4
-```
-
----
-
-## Installazione e configurazione
-
-### 1. Clona il progetto
-
-```bash
-git clone <URL_DEL_REPOSITORY> dxpedition-notifier
-cd dxpedition-notifier
-```
-
-### 2. Crea l'ambiente virtuale
+Installazione:
 
 ```bash
 python3 -m venv venv
 ./venv/bin/pip install --upgrade pip
-./venv/bin/pip install requests beautifulsoup4
+./venv/bin/pip install requests beautifulsoup4 Pillow
 ```
 
-### 3. Crea il file `.env`
+## Configurazione
 
 Creare `.env` nella directory principale:
 
@@ -440,8 +464,8 @@ REQUIRE_HOME_CONTINENT_SPOTTER=true
 MAX_DXPED_AGE_HOURS=12
 DEDUP_WINDOW_MINUTES=30
 
-TELEGRAM_BOT_TOKEN=123456789:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-TELEGRAM_CHAT_ID=-1001234567890
+TELEGRAM_BOT_TOKEN=token_del_bot
+TELEGRAM_CHAT_ID=id_chat
 TELEGRAM_NOTIFY_MODE=HIGH_AND_NORMAL
 TELEGRAM_SILENT=false
 
@@ -450,119 +474,160 @@ MY_LON=11.3500
 PROP_CACHE_MINUTES=45
 ```
 
-Le variabili non impostate usano i valori predefiniti riportati sotto. Il file `.env` viene letto automaticamente da `main.py` senza sovrascrivere variabili già presenti nell'ambiente del sistema.
-
-### 4. Configura Telegram
-
-1. Apri una conversazione con `@BotFather`.
-2. Crea o seleziona un bot e copia il token.
-3. Inserisci il token in `TELEGRAM_BOT_TOKEN`.
-4. Determina l'ID della chat, del gruppo o del canale Telegram.
-5. Per un gruppo o canale, aggiungi il bot con permessi sufficienti a scrivere messaggi.
-
-Il `chat_id` deve essere scritto esattamente come restituito da Telegram; i valori numerici negativi per gruppi e canali devono essere mantenuti con il meno iniziale.
-
----
-
-## Riferimento configurazione
-
-| Variabile | Valore predefinito | Descrizione |
+| Variabile | Predefinito | Descrizione |
 | :--- | :--- | :--- |
-| `MY_CALLSIGN` | `IU4TRM` | Callsign usato per ricavare il continente locale. |
-| `REQUIRE_HOME_CONTINENT_SPOTTER` | `true` | Accetta solo spot inviati da spotter dello stesso continente. |
-| `MAX_DXPED_AGE_HOURS` | `12` | Età massima, in ore, della cache `dxpeditions.json`. |
-| `DEDUP_WINDOW_MINUTES` | `30` | Finestra temporale di deduplicazione degli spot notificati. |
-| `TELEGRAM_BOT_TOKEN` | `""` | Token API del bot Telegram. |
-| `TELEGRAM_CHAT_ID` | `""` | Destinatario Telegram: utente, gruppo o canale. |
-| `TELEGRAM_NOTIFY_MODE` | `HIGH_AND_NORMAL` | `HIGH` soltanto; `HIGH_AND_NORMAL` per entrambe le priorità. |
-| `TELEGRAM_SILENT` | `false` | Imposta `disable_notification` nelle chiamate Telegram. |
-| `MY_LAT` | centro indicativo del continente | Latitudine geografica in decimali per il calcolo della grayline. |
-| `MY_LON` | centro indicativo del continente | Longitudine geografica in decimali per il calcolo della grayline. |
-| `PROP_CACHE_MINUTES` | `45` | Durata della cache dei dati solari in `prop_cache.json`. |
+| `MY_CALLSIGN` | `IU4TRM` | Callsign predefinito e continente locale. |
+| `REQUIRE_HOME_CONTINENT_SPOTTER` | `true` | Accetta solo spotter dello stesso continente. |
+| `MAX_DXPED_AGE_HOURS` | `12` | Età massima della cache DXpedition prima del refresh. |
+| `DEDUP_WINDOW_MINUTES` | `30` | Finestra di soppressione delle notifiche ripetute. |
+| `TELEGRAM_BOT_TOKEN` | vuoto | Token del bot Telegram. |
+| `TELEGRAM_CHAT_ID` | vuoto | ID utente, gruppo o canale Telegram. |
+| `TELEGRAM_NOTIFY_MODE` | `HIGH_AND_NORMAL` | `HIGH` oppure `HIGH_AND_NORMAL`. |
+| `TELEGRAM_SILENT` | `false` | Imposta le notifiche senza suono. |
+| `MY_LAT` | centro continente | Latitudine facoltativa in gradi decimali. |
+| `MY_LON` | centro continente | Longitudine facoltativa in gradi decimali. |
+| `PROP_CACHE_MINUTES` | `45` | Durata dei dati solari in cache. |
 
-Valori booleani riconosciuti come attivi: `1`, `true`, `yes`, `on`, senza distinzione maiuscole/minuscole.
+I valori booleani attivi sono `1`, `true`, `yes`, `on`, ignorando maiuscole/minuscole. Le variabili già definite nell'ambiente non vengono sovrascritte dal `.env`.
 
----
+## Parsing HamQTH
 
-## Utilizzo
+`fetch_dxc_spots()` usa timeout HTTP di 15 secondi e rileva il separatore dalla prima riga non vuota. Le righe con meno di quattro colonne vengono ignorate.
 
-### Ciclo completo di monitoraggio
+- Colonna 0: spotter, convertito in maiuscolo.
+- Colonna 1: frequenza, convertita da MHz a kHz quando valida come numero decimale tra 1 e 60.
+- Colonna 2: nominativo DX in maiuscolo.
+- Colonna 3: commento.
+- Colonna 4: campo UTC/data.
+- Colonna 7: continente DX.
+- Colonna 8: banda.
+- Colonne 9 e 10: entità e ID DXCC.
+
+## DXpedition e match
+
+Lo scraper NG3K richiede righe HTML con almeno sette celle e date parseabili. Estrae:
+
+- callsign principale;
+- eventuali alias nelle note;
+- entità;
+- date di partenza e arrivo;
+- via QSL;
+- note operative;
+- sorgente `ng3k-adxo`.
+
+La corrispondenza `HIGH` considera il nominativo completo, i segmenti separati da `/`, gli alias e la data estratta da un campo UTC nel formato `YYYY-MM-DD`. Entrambi i limiti `start_date`/`end_date` vengono applicati se presenti.
+
+La priorità `NORMAL` viene assegnata se il commento contiene una parola chiave configurata, il termine autonomo `UP`, una barra nel nominativo DX oppure un continente DX diverso dal continente locale.
+
+### Filtri continente
+
+`REQUIRE_HOME_CONTINENT_SPOTTER=true` accetta solo spot da spotter risolti nello stesso continente. La mappa dei prefissi è mantenuta in `prefixes.py`, ordinando i prefissi più lunghi prima dei più brevi.
+
+I continenti riconosciuti sono `EU`, `NA`, `SA`, `AF`, `AS` e `OC`. Un callsign sconosciuto produce un fallback `EU` nell'esecuzione principale.
+
+## Deduplicazione
+
+`seen_spots.json` contiene chiavi e timestamp POSIX:
+
+- con banda: `DX_CALL|BAND`;
+- senza banda: `DX_CALL|~FREQkHz`, arrotondata a 2 kHz;
+- se la frequenza non è numerica: `DX_CALL|frequenza-riga`.
+
+All'avvio vengono rimossi gli elementi più vecchi della finestra `DEDUP_WINDOW_MINUTES`. Le chiavi sono registrate prima dell'invio Telegram, quindi rimangono deduplicate anche in caso di errore di rete o credenziali mancanti.
+
+## Propagazione
+
+Il modulo opzionale `propagation.py`:
+
+- scarica XML da HamQSL/NOAA con timeout di 10 secondi;
+- legge SFI, indici K/A e flare X-ray;
+- conserva i dati in `prop_cache.json` per `PROP_CACHE_MINUTES`;
+- usa una cache precedente come fallback in caso di refresh fallito;
+- calcola un'elevazione approssimata del Sole alle coordinate locali;
+- considera la grayline quando l'elevazione è vicina a ±6°.
+
+La valutazione distingue bande alte, medie e basse, tratte intracontinentali, geomagnetiche disturbate, trans-equatoriali e ad alta latitudine. È informativa e non esclude gli spot.
+
+## Mappa delle tratte
+
+Il modulo `map_paths.py` usa Pillow e può leggere `world_countries.geojson`:
+
+- genera un'immagine 1000×500;
+- usa una proiezione equirettangolare;
+- disegna griglia, campi giorno/notte e fascia grayline;
+- evidenzia paesi coinvolti se il GeoJSON è disponibile;
+- traccia archi great-circle fino alle coordinate DX;
+- usa rosso per `HIGH`, ciano per `NORMAL`;
+- mostra la posizione QTH, i callout, la data UTC e il numero delle tratte.
+
+Se manca il GeoJSON, la mappa viene comunque generata senza contorni paesistici dettagliati. L'immagine predefinita è `dx_paths_map.png`.
+
+## Telegram
+
+I messaggi sono inviati con HTML Telegram. Il codice suddivide i blocchi limitandoli a circa 3900 caratteri.
+
+- `HIGH`: soltanto match diretti alle DXpedition.
+- `HIGH_AND_NORMAL`: entrambi i livelli.
+- `TELEGRAM_SILENT=true`: aggiunge `disable_notification`.
+- `--test-telegram`: verifica il bot senza leggere gli spot.
+- `--send-map`: invia `dx_paths_map.png` con `sendPhoto`.
+
+L'implementazione attuale invia la mappa al solo `TELEGRAM_CHAT_ID` configurato. Gli errori HTTP o di rete vengono registrati senza annullare il ciclo locale.
+
+## Utilizzo CLI
+
+Ciclo completo:
 
 ```bash
 ./venv/bin/python main.py
 ```
 
-Esempio di operazioni svolte:
-
-1. determina callsign e continente;
-2. legge o aggiorna la lista DXpedition;
-3. legge i dati solari/cache;
-4. scarica gli spot HamQTH;
-5. applica filtri e deduplicazione;
-6. stampa i nuovi match;
-7. salva lo stato;
-8. invia gli avvisi Telegram consentiti dalla modalità configurata.
-
-### Verifica Telegram
+Sovrascrivere il callsign:
 
 ```bash
-./venv/bin/python main.py --test-telegram
+./venv/bin/python main.py --callsign W6PQR
 ```
 
-In questa modalità viene inviato un solo messaggio di prova e il monitoraggio degli spot non viene avviato.
-
-### Escludere l'invio Telegram
+Eseguire senza Telegram:
 
 ```bash
 ./venv/bin/python main.py --no-telegram
 ```
 
-Utile per diagnosticare i match, cron in ambienti di prova o esecuzioni manuali senza notifiche.
-
-### Sovrascrivere il callsign
+Verificare Telegram:
 
 ```bash
-./venv/bin/python main.py --callsign K1ABC
+./venv/bin/python main.py --test-telegram
 ```
 
-La chiamata passata da CLI ha priorità su `MY_CALLSIGN` nel file `.env`.
+Inviare anche la mappa:
 
-### Aggiornare manualmente la lista NG3K
+```bash
+./venv/bin/python main.py --send-map
+```
+
+Aggiornamento manuale NG3K:
 
 ```bash
 ./venv/bin/python fetch_ng3k_dxpeditions.py
 ```
 
-Questo comando riscrive `dxpeditions.json` con i dati estratti e mostra fino a otto voci estratte.
-
-### Esempi combinati
+Combinazioni consentite:
 
 ```bash
-./venv/bin/python main.py --callsign IU4ABC --no-telegram
-./venv/bin/python main.py --test-telegram --callsign K1ABC
+./venv/bin/python main.py --callsign W6PQR --no-telegram
+./venv/bin/python main.py --test-telegram --callsign W6PQR
 ```
 
----
-
-## Automazione con cron su macOS
-
-Esempio ogni 15 minuti:
+## Automazione cron su macOS
 
 ```cron
 */15 * * * * cd /Users/nome/dxpedition-notifier && /Users/nome/dxpedition-notifier/venv/bin/python /Users/nome/dxpedition-notifier/main.py >> /Users/nome/dxpedition-notifier/dx_monitor.log 2>&1
 ```
 
-Usare sempre percorsi assoluti. Le righe `>> ... 2>&1` separano l'output e gli errori dal terminale e li salvano nel log.
+Usare sempre percorsi assoluti. Se il progetto è dentro `~/Documents`, potrebbe essere necessario concedere a `cron` l'accesso alla directory o completo al disco nelle impostazioni macOS.
 
-Su macOS potrebbe essere necessario concedere a `cron` l'accesso alle cartelle in:
-
-**Impostazioni di Sistema → Privacy e sicurezza → Accesso completo al disco**
-
-oppure consentire l'accesso alla directory specifica interessata, soprattutto se il progetto si trova sotto `~/Documents`.
-
----
-
-## Formati dei dati locali
+## Formati locali
 
 ### `dxpeditions.json`
 
@@ -575,7 +640,7 @@ oppure consentire l'accesso alla directory specifica interessata, soprattutto se
 }
 ```
 
-Ogni voce contiene tipicamente:
+Ogni voce può contenere:
 
 ```json
 {
@@ -585,14 +650,12 @@ Ogni voce contiene tipicamente:
   "start_date": "2026-11-08",
   "end_date": "2026-12-29",
   "qsl_via": "LoTW",
-  "notes": "Testo e modalità di operazione",
+  "notes": "Informazioni operative",
   "source": "ng3k-adxo"
 }
 ```
 
 ### `seen_spots.json`
-
-Contiene chiavi deduplicate associate a timestamp POSIX:
 
 ```json
 {
@@ -603,8 +666,6 @@ Contiene chiavi deduplicate associate a timestamp POSIX:
 
 ### `prop_cache.json`
 
-Contiene il timestamp di recupero e l'ultimo payload solare disponibile:
-
 ```json
 {
   "fetched_at": 1795372644.181173,
@@ -614,98 +675,64 @@ Contiene il timestamp di recupero e l'ultimo payload solare disponibile:
     "a_index": 5,
     "xray": "C1.2",
     "condition": "Good HF / High bands",
-    "source": "HamQSL/NOAA"
+    "source": "HamQSL/NOAA",
+    "updated_utc": "2026-11-22 18:37 UTC"
   }
 }
 ```
 
----
-
 ## Git e sicurezza
 
-Il file `.gitignore` attuale include, tra gli altri:
+`.gitignore` deve escludere almeno:
 
 ```gitignore
 dxpeditions.json
 seen_spots.json
 prop_cache.json
+dx_paths_map.png
+world_countries.geojson
 .env
-*.pyc
-__pycache__/
-venv/
+dx_monitor.log
 .DS_Store
 **/.DS_Store
 .vscode/settings.json
-dx_monitor.log
+__pycache__/
+*.py[cod]
+.venv/
+venv/
 ```
 
-Prima di pubblicare il repository:
-
-- non inserire token Telegram o credenziali in sorgenti o screenshot;
-- verificare con `git status` che `.env`, cache e log non siano tracciati;
-- usare `git rm --cached <file>` per togliere dall'indice un file già tracciato senza eliminarlo dal disco;
-- evitare di committare `.DS_Store` e configurazioni personali dell'editor.
-
-Se `.DS_Store` era già stato committato:
+Non inserire token o chat ID nei sorgenti o negli screenshot. Per togliere dall'indice un file già tracciato:
 
 ```bash
-git rm --cached .DS_Store
-git commit -m "Stop tracking macOS .DS_Store"
+git rm --cached nome-file
+git commit -m "Stop tracking local runtime file"
 ```
 
-Per verificare i file tracciati dal repository:
+Verifica lo stato Git con:
 
 ```bash
+git status
 git ls-files
 ```
 
----
-
 ## Risoluzione problemi
 
-### Telegram non riceve messaggi
-
-- verificare token e chat ID nel `.env`;
-- eseguire `./venv/bin/python main.py --test-telegram`;
-- verificare che il bot sia membro del gruppo/canale e abbia permessi di scrittura;
-- controllare che `TELEGRAM_NOTIFY_MODE` includa la priorità attesa.
-
-### Nessun nuovo spot viene inviato
-
-- verificare `seen_spots.json`: la chiave dello stesso DX sulla stessa banda può essere in finestra di deduplicazione;
-- aumentare o diminuire `DEDUP_WINDOW_MINUTES`;
-- controllare `REQUIRE_HOME_CONTINENT_SPOTTER`;
-- usare `--no-telegram` per mostrare i match trovati senza invio.
-
-### Lista DXpedition non viene aggiornata
-
-- controllare la connettività verso `https://www.ng3k.com/Misc/adxo.html`;
-- verificare `MAX_DXPED_AGE_HOURS`;
-- eseguire manualmente `fetch_ng3k_dxpeditions.py`;
-- in caso di errore viene mantenuta la lista locale valida disponibile.
-
-### Dati solari indisponibili
-
-- il programma può usare `prop_cache.json` se contiene dati ancora nel formato atteso;
-- in assenza di dati nuovi o cache, mostra `Unavailable` e continua il monitoraggio;
-- verificare l'accesso a `https://www.hamqsl.com/solarxml.php`.
-
-### Callsign riconosciuto nel continente sbagliato
-
-- usare `--callsign` per la singola esecuzione;
-- verificare che `MY_CALLSIGN` abbia il prefisso corretto;
-- controllare o estendere `PREFIX_TO_CONTINENT` in `prefixes.py`.
-
----
+- **Telegram non riceve:** verificare token, chat ID, permessi del bot e modalità priorità; usare `--test-telegram`.
+- **Uno spot viene saltato:** controllare `seen_spots.json` e `DEDUP_WINDOW_MINUTES`.
+- **Nessun match DXpedition:** controllare la lista NG3K e le date attività.
+- **Troppi spot esclusi:** disattivare il filtro continente o verificare il prefisso callsign.
+- **Continente errato:** estendere `PREFIX_TO_CONTINENT` oppure usare `--callsign` per un'unica esecuzione.
+- **Dati solari assenti:** usare la cache valida oppure accettare il valore `Unavailable`.
+- **Mappa assente:** installare Pillow e verificare che gli spot abbiano coordinate risolvibili.
+- **Foto non inviata:** aggiungere `--send-map`, impostare le credenziali e non usare `--no-telegram`.
+- **Nessun spot HamQTH:** verificare rete e formato di risposta del feed.
 
 ## Comportamento in caso di errore
 
-Il progetto privilegia la resilienza durante i cicli automatizzati:
-
-- un errore sul refresh NG3K non cancella la lista locale;
-- uno spot live non viene scartato dalla valutazione propagazione se quel modulo fallisce;
-- dati solari mancanti producono una condizione `Unavailable` anziché bloccare il programma;
-- errori Telegram vengono registrati in console/log e non impediscono la deduplicazione degli altri dati;
-- se non esistono credenziali Telegram, l'invio viene saltato con un messaggio informativo.
-
-Questo rende il programma adatto a esecuzioni ripetute, ma non garantisce disponibilità durante outage di HamQTH, NG3K, HamQSL o Telegram.
+- Il fallimento NG3K conserva la lista locale precedente.
+- Il fallimento HamQTH interrompe soltanto il ciclo corrente.
+- Il fallimento propagazione produce dati cache o `Unavailable`.
+- Il fallimento Telegram non annulla le chiavi di deduplicazione già salvate.
+- Le credenziali mancanti saltano gli invii con messaggi informativi.
+- La mancanza di Pillow o del modulo mappa disattiva solo la mappa e la foto.
