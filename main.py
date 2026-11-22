@@ -430,14 +430,27 @@ def _esc(val: str | None) -> str:
     return html.escape((val or "").strip(), quote=False)
 
 
+def _format_notification_timestamp(dt: datetime.datetime | None = None) -> str:
+    """Restituisce giorno e ora di invio/ricezione in formato leggibile (locale + UTC)."""
+    base_dt = dt or datetime.datetime.now().astimezone()
+    if base_dt.tzinfo is None:
+        base_dt = base_dt.astimezone()
+    local_str = base_dt.strftime("%d/%m/%Y %H:%M %Z").strip()
+    utc_str = base_dt.astimezone(datetime.timezone.utc).strftime("%H:%M UTC")
+    return f"{local_str} ({utc_str})"
+
+
 def _format_telegram_message(
     matches: list[tuple[dict, str, str]],
     callsign: str,
     home_continent: str,
+    sent_at_label: str | None = None,
 ) -> str:
     """Formatta i nuovi spot in uno o più messaggi leggibili su Telegram."""
+    ts_label = sent_at_label or _format_notification_timestamp()
     lines = [
         f"📡 <b>DX Cluster Alert</b> ({_esc(callsign)} / {_esc(home_continent)})",
+        f"🗓️ Inviato: <code>{_esc(ts_label)}</code>",
         "",
     ]
     for spot, priority, reason in matches:
@@ -493,12 +506,12 @@ def send_telegram_test(
     silent: bool = TELEGRAM_SILENT,
 ) -> bool:
     """Invia un messaggio di prova per verificare configurazione Telegram."""
-    now_utc = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
+    ts_label = _format_notification_timestamp()
     text = (
         f"✅ <b>Test Telegram DX Cluster Monitor</b>\n"
         f"Callsign: <code>{_esc(callsign)}</code> ({_esc(home_continent)})\n"
         f"Modalità: <code>{_esc(TELEGRAM_NOTIFY_MODE)}</code> | Silenzioso: <code>{silent}</code>\n"
-        f"UTC: <code>{_esc(now_utc)}</code>"
+        f"🗓️ Inviato: <code>{_esc(ts_label)}</code>"
     )
     ok = _send_telegram_text(text, bot_token=bot_token, chat_id=chat_id, silent=silent)
     if ok:
@@ -523,6 +536,7 @@ def send_telegram_alerts(
         print("Info Telegram: TELEGRAM_BOT_TOKEN o TELEGRAM_CHAT_ID non impostati, invio saltato.")
         return
 
+    sent_at_label = _format_notification_timestamp()
     max_len = 3900
 
     chunks: list[list[tuple[dict, str, str]]] = []
@@ -530,7 +544,7 @@ def send_telegram_alerts(
     current_len = 0
 
     for item in to_send:
-        approx_len = len(_format_telegram_message([item], callsign, home_continent))
+        approx_len = len(_format_telegram_message([item], callsign, home_continent, sent_at_label))
         if current_chunk and (current_len + approx_len) > max_len:
             chunks.append(current_chunk)
             current_chunk = [item]
@@ -543,7 +557,7 @@ def send_telegram_alerts(
         chunks.append(current_chunk)
 
     for idx, chunk in enumerate(chunks, start=1):
-        text = _format_telegram_message(chunk, callsign, home_continent)
+        text = _format_telegram_message(chunk, callsign, home_continent, sent_at_label)
         if len(chunks) > 1:
             text = f"<i>Parte {idx}/{len(chunks)}</i>\n\n{text}"
         _send_telegram_text(text, bot_token=bot_token, chat_id=chat_id, silent=silent)
