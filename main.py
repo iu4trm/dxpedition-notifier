@@ -431,7 +431,7 @@ def _esc(val: str | None) -> str:
 
 
 def _format_notification_timestamp(dt: datetime.datetime | None = None) -> str:
-    """Restituisce giorno e ora di invio/ricezione in formato leggibile (locale + UTC)."""
+    """Restituisce giorno e ora in formato leggibile (locale + UTC)."""
     base_dt = dt or datetime.datetime.now().astimezone()
     if base_dt.tzinfo is None:
         base_dt = base_dt.astimezone()
@@ -565,6 +565,7 @@ def send_telegram_alerts(
 
 def main():
     args = parse_args()
+    run_timestamp = _format_notification_timestamp()
     cli_callsign = (args.callsign or "").strip().upper()
     if cli_callsign:
         my_callsign = cli_callsign
@@ -581,6 +582,7 @@ def main():
         print(f"Avviso: prefisso di '{my_callsign}' non riconosciuto, uso 'EU' come fallback.")
 
     print("=" * 56)
+    print(f"ESECUZIONE: {run_timestamp}")
     print(f"CALLSIGN IN USO: {my_callsign}  |  CONTINENTE: {home_continent}  |  ORIGINE: {callsign_source}")
     print("=" * 56)
 
