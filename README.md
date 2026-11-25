@@ -78,6 +78,18 @@ python3 -m venv venv
 ./venv/bin/pip install requests beautifulsoup4 Pillow
 ```
 
+Dependencies can also be installed from the provided manifest:
+
+```bash
+./venv/bin/pip install -r requirements.txt
+```
+
+Run the automated test suite:
+
+```bash
+./venv/bin/python -m pytest -q
+```
+
 ### Configuration
 
 Create `.env` in the project directory:
@@ -95,6 +107,7 @@ TELEGRAM_SILENT=false
 
 MY_LAT=44.5000
 MY_LON=11.3500
+MY_QTH_LOCATOR=JN45AB
 PROP_CACHE_MINUTES=45
 ```
 
@@ -110,6 +123,7 @@ PROP_CACHE_MINUTES=45
 | `TELEGRAM_SILENT` | `false` | Sets Telegram `disable_notification`. |
 | `MY_LAT` | continent reference | Optional station latitude in decimal degrees. |
 | `MY_LON` | continent reference | Optional station longitude in decimal degrees. |
+| `MY_QTH_LOCATOR` | `JN45AB` | Optional Maidenhead locator. |
 | `PROP_CACHE_MINUTES` | `45` | Minimum lifetime of cached solar data. |
 
 Boolean values `1`, `true`, `yes`, and `on` enable filtering and silent mode. Text is matched case-insensitively.
@@ -454,6 +468,18 @@ python3 -m venv venv
 ./venv/bin/pip install requests beautifulsoup4 Pillow
 ```
 
+Le dipendenze possono essere installate anche dal manifesto fornito:
+
+```bash
+./venv/bin/pip install -r requirements.txt
+```
+
+Eseguire la suite automatica:
+
+```bash
+./venv/bin/python -m pytest -q
+```
+
 ## Configurazione
 
 Creare `.env` nella directory principale:
@@ -471,6 +497,7 @@ TELEGRAM_SILENT=false
 
 MY_LAT=44.5000
 MY_LON=11.3500
+MY_QTH_LOCATOR=JN45AB
 PROP_CACHE_MINUTES=45
 ```
 
@@ -486,6 +513,7 @@ PROP_CACHE_MINUTES=45
 | `TELEGRAM_SILENT` | `false` | Imposta le notifiche senza suono. |
 | `MY_LAT` | centro continente | Latitudine facoltativa in gradi decimali. |
 | `MY_LON` | centro continente | Longitudine facoltativa in gradi decimali. |
+| `MY_QTH_LOCATOR` | `JN45AB` | Locator Maidenhead facoltativo. |
 | `PROP_CACHE_MINUTES` | `45` | Durata dei dati solari in cache. |
 
 I valori booleani attivi sono `1`, `true`, `yes`, `on`, ignorando maiuscole/minuscole. Le variabili già definite nell'ambiente non vengono sovrascritte dal `.env`.

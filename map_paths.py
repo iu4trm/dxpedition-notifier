@@ -8,6 +8,9 @@ from typing import Iterable
 from PIL import Image, ImageDraw, ImageFont
 import requests
 
+from project_utils import request_with_retry
+from locators import maidenhead_to_latlon, resolve_spot_locator
+
 from propagation import (
     CONTINENT_REFERENCE_COORDS,
     resolve_spot_zone,
@@ -375,7 +378,12 @@ def draw_countries_layer(
 
 
 def _resolve_dx_coords(spot: dict) -> tuple[float, float] | None:
-    """Ricava coordinate indicative per lo spot (entità/prefisso noto o continente DX)."""
+    """Ricava coordinate esatte o indicative per lo spot."""
+    locator = resolve_spot_locator(spot)
+    locator_coords = maidenhead_to_latlon(locator) if locator else None
+    if locator_coords:
+        return locator_coords
+
     entity = (spot.get("dxcc_entity") or "").strip().upper()
     call = (spot.get("dx_call") or "").strip().upper()
 
@@ -487,6 +495,61 @@ def _draw_labels_non_overlapping(
         draw.text((chosen_x, chosen_y), text, fill=(245, 248, 252, 245), font=font)
 
 
+def _find_solar_elevation_latitude(
+    lon_deg: float,
+    target_elev_deg: float,
+    dt_utc: datetime.datetime,
+) -> float | None:
+    previous_lat = -90.0
+    previous_elev = solar_elevation_deg(previous_lat, lon_deg, dt_utc) - target_elev_deg
+
+    for lat in range(-89, 91):
+        elev = solar_elevation_deg(float(lat), lon_deg, dt_utc) - target_elev_deg
+        if previous_elev == 0.0:
+            return previous_lat
+        if previous_elev * elev < 0:
+            fraction = previous_elev / (previous_elev - elev)
+            return previous_lat + fraction * (lat - previous_lat)
+        previous_lat = float(lat)
+        previous_elev = elev
+    return None
+
+
+def _draw_smooth_grayline(
+    draw: ImageDraw.ImageDraw,
+    width: int,
+    height: int,
+    dt_utc: datetime.datetime,
+) -> None:
+    outer_points: list[tuple[int, int]] = []
+    inner_points: list[tuple[int, int]] = []
+    center_points: list[tuple[int, int]] = []
+
+    for lon in range(-180, 181, 2):
+        outer_lat = _find_solar_elevation_latitude(float(lon), 6.0, dt_utc)
+        inner_lat = _find_solar_elevation_latitude(float(lon), -6.0, dt_utc)
+        center_lat = _find_solar_elevation_latitude(float(lon), 0.0, dt_utc)
+
+        x, _ = _latlon_to_xy(0.0, float(lon), width, height)
+        if outer_lat is not None:
+            _, outer_y = _latlon_to_xy(outer_lat, float(lon), width, height)
+            outer_points.append((x, outer_y))
+        if inner_lat is not None:
+            _, inner_y = _latlon_to_xy(inner_lat, float(lon), width, height)
+            inner_points.append((x, inner_y))
+        if center_lat is not None:
+            _, center_y = _latlon_to_xy(center_lat, float(lon), width, height)
+            center_points.append((x, center_y))
+
+    if len(outer_points) > 2 and len(inner_points) > 2:
+        polygon = outer_points + list(reversed(inner_points))
+        draw.polygon(polygon, fill=(194, 134, 70, 75))
+
+    if len(center_points) > 2:
+        draw.line(center_points, fill=(194, 134, 70, 55), width=6, joint="curve")
+        draw.line(center_points, fill=(157, 102, 58, 235), width=2, joint="curve")
+
+
 def render_paths_map(
     matches: Iterable[tuple[dict, str, str]],
     home_coords: tuple[float, float],
@@ -494,6 +557,7 @@ def render_paths_map(
     out_path: str = DEFAULT_MAP_OUT,
     size: tuple[int, int] = (1000, 500),
     geojson_path: str = DEFAULT_COUNTRIES_GEOJSON,
+    home_locator: str = "",
 ) -> str | None:
     """
     Genera una mappa PNG con contorni geografici, griglia, fascia grayline approssimata,
@@ -549,25 +613,8 @@ def render_paths_map(
         geojson_path=geojson_path,
     )
 
-    # Campi giorno/notte e fascia grayline (campionamento 3° lat / 4° lon)
-    step_lat, step_lon = 3, 4
-    cell_w = max(1, int(math.ceil(w / (360.0 / step_lon))))
-    cell_h = max(1, int(math.ceil(h / (180.0 / step_lat))))
-
-    for lat in range(-90, 90, step_lat):
-        c_lat = lat + step_lat / 2.0
-        for lon in range(-180, 180, step_lon):
-            c_lon = lon + step_lon / 2.0
-            elev = solar_elevation_deg(c_lat, c_lon, ref_dt)
-            x0, y0 = _latlon_to_xy(
-                c_lat + step_lat / 2.0, c_lon - step_lon / 2.0, w, h
-            )
-            x1, y1 = x0 + cell_w, y0 + cell_h
-
-            if -6.0 <= elev <= 6.0:
-                draw_ov.rectangle([x0, y0, x1, y1], fill=(255, 165, 40, 95))
-            elif elev < -6.0:
-                draw_ov.rectangle([x0, y0, x1, y1], fill=(4, 8, 16, 110))
+    # Ombra notturna leggera: nessun riempimento a blocchi grandi.
+    _draw_smooth_grayline(draw_ov, w, h, ref_dt)
 
     img = Image.alpha_composite(base, overlay)
     draw = ImageDraw.Draw(img, "RGBA")
@@ -596,6 +643,9 @@ def render_paths_map(
             outline=(255, 255, 255, 200),
         )
         call_label = (spot.get("dx_call") or "").strip()
+        dx_locator = resolve_spot_locator(spot)
+        if dx_locator:
+            call_label = f"{call_label} [{dx_locator}]" if call_label else dx_locator
         if call_label:
             labels_to_draw.append((dx_x, dx_y, call_label, priority))
         drawn_paths += 1
@@ -607,6 +657,10 @@ def render_paths_map(
         fill=(90, 245, 130, 255),
         outline=(255, 255, 255, 255),
     )
+    if home_locator:
+        home_label = f"QTH [{home_locator}]"
+        draw.rectangle([hx + 8, hy - 8, hx + 8 + len(home_label) * 6, hy + 5], fill=(15, 22, 34, 210))
+        draw.text((hx + 11, hy - 7), home_label, fill=(220, 255, 230, 255), font=font)
 
     if drawn_paths == 0:
         return None
@@ -614,8 +668,9 @@ def render_paths_map(
     _draw_labels_non_overlapping(draw, labels_to_draw, w, h, font)
 
     stamp = ref_dt.strftime("%Y-%m-%d %H:%M UTC")
-    header_txt = f"DX Paths & Grayline (~6 deg) | {stamp} | Paths: {drawn_paths}"
-    draw.rectangle([8, 8, 430, 28], fill=(15, 22, 34, 210))
+    locator_txt = f" | QTH: {home_locator}" if home_locator else ""
+    header_txt = f"DX Paths & Grayline (~6 deg) | {stamp} | Paths: {drawn_paths}{locator_txt}"
+    draw.rectangle([8, 8, 650, 28], fill=(15, 22, 34, 210))
     draw.text((14, 12), header_txt, fill=(235, 242, 250, 255), font=font)
 
     out_dir = os.path.dirname(os.path.abspath(out_path))
@@ -645,16 +700,19 @@ def send_photo_to_chats(
     for cid in chat_ids:
         try:
             with open(image_path, "rb") as fh:
-                resp = requests.post(
-                    url,
-                    data={
-                        "chat_id": cid,
-                        "caption": caption[:1024],
-                        "parse_mode": "HTML",
-                        "disable_notification": silent,
-                    },
-                    files={"photo": ("dx_paths.png", fh, "image/png")},
-                    timeout=20,
+                resp = request_with_retry(
+                    lambda: requests.post(
+                        url,
+                        data={
+                            "chat_id": cid,
+                            "caption": caption[:1024],
+                            "parse_mode": "HTML",
+                            "disable_notification": silent,
+                        },
+                        files={"photo": ("dx_paths.png", fh, "image/png")},
+                        timeout=20,
+                    ),
+                    attempts=3,
                 )
             resp.raise_for_status()
         except requests.RequestException as err:

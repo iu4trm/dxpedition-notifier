@@ -1,0 +1,16 @@
+[project]
+name = "dxpedition-notifier"
+version = "0.6.0"
+requires-python = ">=3.10"
+dependencies = [
+  "beautifulsoup4>=4.12,<5",
+  "Pillow>=10,<14",
+  "requests>=2.31,<3",
+]
+
+[project.optional-dependencies]
+test = ["pytest>=8,<9"]
+
+[tool.pytest.ini_options]
+addopts = "-ra"
+testpaths = ["tests"]

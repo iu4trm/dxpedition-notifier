@@ -9,6 +9,8 @@ import xml.etree.ElementTree as ET
 import requests
 
 from prefixes import get_call_continent
+from project_utils import atomic_json_dump, load_dotenv, request_with_retry
+from locators import maidenhead_to_latlon, normalize_locator, resolve_spot_locator
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 PROP_CACHE_FILE = os.path.join(BASE_DIR, "prop_cache.json")
@@ -38,6 +40,8 @@ CONTINENT_REFERENCE_COORDS: dict[str, tuple[float, float]] = {
     "OC": (-25.0, 135.0),
 }
 
+load_dotenv(os.path.join(BASE_DIR, ".env"))
+
 
 def _load_cache(path: str = PROP_CACHE_FILE) -> dict | None:
     if not os.path.exists(path):
@@ -51,11 +55,7 @@ def _load_cache(path: str = PROP_CACHE_FILE) -> dict | None:
 
 
 def _save_cache(payload: dict, path: str = PROP_CACHE_FILE) -> None:
-    try:
-        with open(path, "w", encoding="utf-8") as f:
-            json.dump(payload, f, indent=2, ensure_ascii=False)
-    except OSError as err:
-        print(f"Propagation warning: unable to save cache ({err})")
+    atomic_json_dump(payload, path, ensure_ascii=False)
 
 
 def _to_float(val: str | None) -> float | None:
@@ -72,6 +72,12 @@ def _to_float(val: str | None) -> float | None:
 
 def _resolve_reference_coords(home_continent: str | None) -> tuple[float, float] | None:
     """Restituisce (lat, lon) da MY_LAT/MY_LON se presenti, altrimenti da home_continent."""
+    locator_coords = maidenhead_to_latlon(
+        os.getenv("MY_QTH_LOCATOR") or os.getenv("MY_LOCATOR", "")
+    )
+    if locator_coords:
+        return locator_coords
+
     lat_env = _to_float(os.getenv("MY_LAT"))
     lon_env = _to_float(os.getenv("MY_LON"))
     if lat_env is not None and lon_env is not None:
@@ -127,6 +133,18 @@ def solar_elevation_deg(lat_deg: float, lon_deg: float, dt_utc: datetime.datetim
     return math.degrees(math.asin(sin_alt))
 
 
+def is_grayline_at_coords(
+    lat_lon: tuple[float, float] | None,
+    dt_utc: datetime.datetime | None = None,
+    window_deg: float = 6.0,
+) -> tuple[bool, float | None]:
+    if not lat_lon:
+        return False, None
+    ref_dt = dt_utc or datetime.datetime.now(datetime.timezone.utc)
+    elev = solar_elevation_deg(lat_lon[0], lat_lon[1], ref_dt)
+    return (-window_deg <= elev <= window_deg), elev
+
+
 def is_grayline_window(
     home_continent: str | None,
     dt_utc: datetime.datetime | None = None,
@@ -143,10 +161,13 @@ def is_grayline_window(
 
 
 def _fetch_hamqsl_solar(timeout: int = 10) -> dict:
-    resp = requests.get(
-        HAMQSL_SOLAR_URL,
-        headers={"User-Agent": "DXpedition-Notifier/0.5"},
-        timeout=timeout,
+    resp = request_with_retry(
+        lambda: requests.get(
+            HAMQSL_SOLAR_URL,
+            headers={"User-Agent": "DXpedition-Notifier/0.5"},
+            timeout=timeout,
+        ),
+        attempts=3,
     )
     resp.raise_for_status()
     root = ET.fromstring(resp.text)
@@ -284,12 +305,26 @@ def assess_path_for_spot(spot: dict, prop: dict | None, home_continent: str | No
     dx_zone = resolve_spot_zone(spot)
     band = _normalize_band(spot.get("band"))
 
+    home_locator = normalize_locator(os.getenv("MY_QTH_LOCATOR") or os.getenv("MY_LOCATOR", ""))
+    dx_locator = resolve_spot_locator(spot)
     path_label = f"{home}->{dx_zone}" + (f" {band}" if band else "")
+    if home_locator:
+        path_label += f" ({home_locator}"
+        path_label += f"->{dx_locator})" if dx_locator else ")"
+    elif dx_locator:
+        path_label += f" (-> {dx_locator})"
+
     spot_dt = _parse_spot_utc_datetime(spot.get("utc"))
-    in_grayline, elev = is_grayline_window(home, dt_utc=spot_dt)
+    home_coords = _resolve_reference_coords(home)
+    dx_coords = maidenhead_to_latlon(dx_locator) if dx_locator else None
+
+    home_grayline, home_elev = is_grayline_at_coords(home_coords, dt_utc=spot_dt)
+    dx_grayline, dx_elev = is_grayline_at_coords(dx_coords, dt_utc=spot_dt)
     gl_suffix = ""
-    if in_grayline and elev is not None:
-        gl_suffix = f" [grayline window, sun {elev:+.1f}°]" if band in GRAYLINE_FAVORED_BANDS else f" [grayline {elev:+.1f}°]"
+    if home_grayline or dx_grayline:
+        elev_values = [e for e in (home_elev, dx_elev) if e is not None]
+        elev_label = "/".join(f"{e:+.1f}°" for e in elev_values)
+        gl_suffix = f" [grayline window, sun {elev_label}]" if band in GRAYLINE_FAVORED_BANDS else f" [grayline {elev_label}]"
 
     if not prop:
         return f"Path {path_label}{gl_suffix}"

@@ -9,7 +9,10 @@ import re
 import time
 import requests
 
+from config import load_config
+from locators import extract_locator, maidenhead_to_latlon, normalize_locator
 from prefixes import get_call_continent
+from project_utils import atomic_json_dump, load_dotenv, request_with_retry
 
 try:
     from propagation import (
@@ -63,11 +66,22 @@ def _load_dotenv(dotenv_path: str = DOTENV_FILE) -> None:
         print(f"Avviso: impossibile leggere .env ({err})")
 
 
-# Carica .env prima di leggere le variabili di configurazione
-_load_dotenv()
+# Carica .env prima delle configurazioni e degli import dipendenti
+load_dotenv(DOTENV_FILE)
 
-MAX_DXPED_AGE_HOURS = float(os.getenv("MAX_DXPED_AGE_HOURS", "12"))
-DEDUP_WINDOW_MINUTES = int(os.getenv("DEDUP_WINDOW_MINUTES", "30"))
+try:
+    APP_CONFIG = load_config()
+except ValueError as err:
+    raise SystemExit(f"Configuration error: {err}")
+
+MAX_DXPED_AGE_HOURS = APP_CONFIG.max_dxped_age_hours
+DEDUP_WINDOW_MINUTES = APP_CONFIG.dedup_window_minutes
+DEFAULT_CALLSIGN = APP_CONFIG.callsign
+REQUIRE_HOME_CONTINENT_SPOTTER = APP_CONFIG.require_home_spotter
+TELEGRAM_NOTIFY_MODE = APP_CONFIG.telegram_notify_mode
+TELEGRAM_BOT_TOKEN = APP_CONFIG.telegram_bot_token
+TELEGRAM_CHAT_ID = APP_CONFIG.telegram_chat_id
+TELEGRAM_SILENT = APP_CONFIG.telegram_silent
 
 # Identità della stazione di default da .env / ambiente
 DEFAULT_CALLSIGN = os.getenv("MY_CALLSIGN", "IU4TRM").strip().upper()
@@ -157,8 +171,7 @@ def is_home_continent_spotter(spotter: str, home_continent: str) -> bool:
 def _save_local_dxpeditions(data: dict, path: str = LOCAL_DXPED_FILE) -> None:
     """Salva la lista DXpedition in locale."""
     try:
-        with open(path, "w", encoding="utf-8") as f:
-            json.dump(data, f, indent=2, ensure_ascii=False)
+        atomic_json_dump(data, path, ensure_ascii=False)
     except OSError as err:
         print(f"Avviso: impossibile salvare il file locale DXpedition ({err})")
 
@@ -323,7 +336,10 @@ def fetch_dxc_spots(callsign: str, url: str = HAMQTH_DXC_URL) -> list[dict]:
     headers = {
         "User-Agent": f"DXpedition-Notifier/0.5 ({callsign})"
     }
-    response = requests.get(url, headers=headers, timeout=15)
+    response = request_with_retry(
+        lambda: requests.get(url, headers=headers, timeout=15),
+        attempts=3,
+    )
     response.raise_for_status()
     response.encoding = response.apparent_encoding or "utf-8"
 
@@ -349,7 +365,8 @@ def fetch_dxc_spots(callsign: str, url: str = HAMQTH_DXC_URL) -> list[dict]:
             "band": row[8].strip().upper() if len(row) > 8 else "",
             "dxcc_entity": row[9].strip() if len(row) > 9 else "",
             "dxcc_id": row[10].strip() if len(row) > 10 else "",
-            "raw": row,
+            "dx_locator": extract_locator(row[3]) or extract_locator(" ".join(row)),
+            "spotter_locator": extract_locator(" ".join(row[:7])),
         }
         spots.append(spot)
 
@@ -443,8 +460,7 @@ def load_seen_spots(path: str = SEEN_SPOTS_FILE, window_minutes: int = DEDUP_WIN
 def save_seen_spots(seen: dict[str, float], path: str = SEEN_SPOTS_FILE) -> None:
     """Salva su disco lo stato delle chiavi già notificate."""
     try:
-        with open(path, "w", encoding="utf-8") as f:
-            json.dump(seen, f, indent=2)
+        atomic_json_dump(seen, path)
     except OSError as err:
         print(f"Avviso: impossibile salvare lo stato deduplica ({err})")
 
@@ -497,7 +513,13 @@ def _render_prop_telegram(prop: dict | None, home_continent: str) -> str:
 
 
 def _resolve_home_coords(home_continent: str) -> tuple[float, float] | None:
-    """Ricava (lat, lon) da MY_LAT/MY_LON oppure dal centro indicativo del continente."""
+    """Resolve local coordinates from locator, lat/lon, or continent fallback."""
+    locator = normalize_locator(os.getenv("MY_QTH_LOCATOR") or os.getenv("MY_LOCATOR", ""))
+    if locator:
+        coords = maidenhead_to_latlon(locator)
+        if coords:
+            return coords
+
     lat_raw = os.getenv("MY_LAT", "").strip().replace(",", ".")
     lon_raw = os.getenv("MY_LON", "").strip().replace(",", ".")
     if lat_raw and lon_raw:
@@ -523,8 +545,14 @@ def _update_local_map(
     home_coords = _resolve_home_coords(home_continent)
     if not home_coords:
         return None
+    home_locator = normalize_locator(os.getenv("MY_QTH_LOCATOR") or os.getenv("MY_LOCATOR", "")) or ""
     try:
-        return render_paths_map(matches, home_coords=home_coords, out_path=out_path)
+        return render_paths_map(
+            matches,
+            home_coords=home_coords,
+            home_locator=home_locator,
+            out_path=out_path,
+        )
     except Exception as err:
         print(f"Avviso mappa: impossibile generare {out_path} ({err}).")
         return None
@@ -534,7 +562,7 @@ def _format_telegram_message(
     matches: list[tuple[dict, str, str]],
     callsign: str,
     home_continent: str,
-    sent_at_label: str | None = None,
+    sent_at_label: str | None,
     prop: dict | None = None,
 ) -> str:
     """Formatta i nuovi spot in uno o più messaggi leggibili su Telegram."""
@@ -578,8 +606,8 @@ def _send_telegram_text(
         return False
 
     url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
-    try:
-        resp = requests.post(
+    resp = request_with_retry(
+        lambda: requests.post(
             url,
             json={
                 "chat_id": chat_id,
@@ -589,12 +617,11 @@ def _send_telegram_text(
                 "disable_notification": silent,
             },
             timeout=15,
-        )
-        resp.raise_for_status()
-        return True
-    except requests.RequestException as err:
-        print(f"Avviso Telegram: errore durante l'invio: {err}")
-        return False
+        ),
+        attempts=3,
+    )
+    resp.raise_for_status()
+    return True
 
 
 def send_telegram_test(

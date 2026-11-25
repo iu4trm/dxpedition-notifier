@@ -5,6 +5,8 @@ import re
 import requests
 from bs4 import BeautifulSoup
 
+from project_utils import atomic_json_dump, request_with_retry
+
 ADXO_URL = "https://www.ng3k.com/Misc/adxo.html"
 OUT_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "dxpeditions.json")
 
@@ -59,7 +61,10 @@ def fetch_ng3k_dxpeditions(url: str = ADXO_URL) -> list[dict]:
     headers = {
         "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) DXpedition-Notifier/0.2"
     }
-    resp = requests.get(url, headers=headers, timeout=15)
+    resp = request_with_retry(
+        lambda: requests.get(url, headers=headers, timeout=15),
+        attempts=3,
+    )
     resp.raise_for_status()
     resp.encoding = resp.apparent_encoding or "latin-1"
 
@@ -116,8 +121,7 @@ def main():
         "dxpeditions": entries,
     }
 
-    with open(OUT_FILE, "w", encoding="utf-8") as f:
-        json.dump(payload, f, indent=2, ensure_ascii=False)
+    atomic_json_dump(payload, OUT_FILE, ensure_ascii=False)
 
     print(f"Estratte {len(entries)} spedizioni da NG3K e salvate in {OUT_FILE}")
     for item in entries[:8]:
